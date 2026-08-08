@@ -17,7 +17,15 @@ const DOC_TYPES = [
 
 const STAGE_LABELS = ["Uploading", "Extracting", "Understanding"];
 
-export function UploadDocument({ caseId }: { caseId: string }) {
+type UploadDocumentProps = {
+  // null when the case doesn't exist yet — see components/new-case-shell.tsx.
+  // ensureCase must be provided in that case; it creates the case (once,
+  // however many things race to call it) and returns its id.
+  caseId: string | null;
+  ensureCase?: () => Promise<string>;
+};
+
+export function UploadDocument({ caseId, ensureCase }: UploadDocumentProps) {
   const [docType, setDocType] = useState("unknown");
   // -1 = idle, 0-2 = that stage active, 3 = all done
   const [stage, setStage] = useState(-1);
@@ -29,6 +37,10 @@ export function UploadDocument({ caseId }: { caseId: string }) {
   const busy = stage >= 0 && stage < 3;
 
   async function handleUpload(file: File) {
+    if (caseId === null && !ensureCase) {
+      throw new Error("UploadDocument: ensureCase is required when caseId is null");
+    }
+
     let currentStage = 0;
     setStage(currentStage);
     setErrorStage(null);
@@ -36,7 +48,9 @@ export function UploadDocument({ caseId }: { caseId: string }) {
     setSummary(null);
 
     try {
-      const createRes = await fetch(`/api/cases/${caseId}/documents`, {
+      const resolvedCaseId = caseId ?? (await ensureCase!());
+
+      const createRes = await fetch(`/api/cases/${resolvedCaseId}/documents`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -84,7 +98,11 @@ export function UploadDocument({ caseId }: { caseId: string }) {
         );
       }
       setStage(3);
-      router.refresh();
+      if (caseId === null) {
+        router.push(`/case/${resolvedCaseId}`);
+      } else {
+        router.refresh();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
       setErrorStage(currentStage);
