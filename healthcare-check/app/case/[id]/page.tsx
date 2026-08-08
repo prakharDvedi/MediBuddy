@@ -1,13 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/logout-button";
 import { UploadDocument } from "@/components/upload-document";
-import { DocumentPages } from "@/components/document-pages";
-import { DocumentItems } from "@/components/document-items";
+import { DocumentCard } from "@/components/document-card";
+import { CaseSummary } from "@/components/case-summary";
+import { CoverageSummary } from "@/components/coverage-summary";
+import { FindingCard } from "@/components/finding-card";
 import { RunAuditButton } from "@/components/run-audit-button";
+import { EditableCaseTitle } from "@/components/editable-case-title";
 import { AskPolicy } from "@/components/ask-policy";
 import { CompareEstimate } from "@/components/compare-estimate";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 type InsurancePolicySummary = {
   id: string;
@@ -23,6 +27,14 @@ type InsurancePolicySummary = {
   consumables_covered: boolean | null;
   other_conditions: string[] | null;
 };
+
+const CONFIDENCE_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{children}</p>
+  );
+}
 
 export default async function CasePage({
   params,
@@ -60,6 +72,10 @@ export default async function CasePage({
     .eq("case_id", id)
     .order("created_at", { ascending: false });
 
+  const sortedFindings = [...(findings ?? [])].sort(
+    (a, b) => (CONFIDENCE_RANK[a.confidence] ?? 3) - (CONFIDENCE_RANK[b.confidence] ?? 3),
+  );
+
   const { data: questions } = await supabase
     .from("questions")
     .select("id, finding_id, question_text")
@@ -92,7 +108,7 @@ export default async function CasePage({
     }, 0);
 
   const generalQuestions = (questions ?? []).filter((q) => !q.finding_id);
-  const questionsByFinding = new Map<string, typeof questions>();
+  const questionsByFinding = new Map<string, NonNullable<typeof questions>>();
   for (const q of questions ?? []) {
     if (!q.finding_id) continue;
     const list = questionsByFinding.get(q.finding_id) ?? [];
@@ -108,233 +124,75 @@ export default async function CasePage({
         </Link>
         <LogoutButton />
       </nav>
-      <main className="mx-auto max-w-3xl px-6 py-16">
-        <Link href="/dashboard" className="text-sm text-zinc-500 underline">
+      <main className="mx-auto max-w-3xl px-6 py-12">
+        <Link href="/dashboard" className="text-sm text-zinc-500 hover:underline">
           &larr; Back to cases
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-black dark:text-zinc-50">
-          {caseRow.title}
-        </h1>
+        <EditableCaseTitle caseId={id} title={caseRow.title} />
 
-        <div className="mt-6">
+        <section className="mt-8 flex flex-col gap-3">
           <UploadDocument caseId={id} />
-        </div>
-
-        <div className="mt-8 flex flex-col gap-3">
-          {!documents || documents.length === 0 ? (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              No documents uploaded yet.
-            </p>
-          ) : (
-            documents.map((doc) => (
-              <div
-                key={doc.id}
-                className="rounded-lg border border-black/10 dark:border-white/10 p-4"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-black dark:text-zinc-50">
-                      {doc.original_filename}
-                    </p>
-                    <p className="text-xs text-zinc-500">
-                      {doc.doc_type} &middot; {doc.mime_type} &middot;{" "}
-                      {doc.page_count ?? 0} page(s)
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-black/5 dark:bg-white/10 px-2.5 py-1 text-xs text-zinc-700 dark:text-zinc-300">
-                    {doc.status}
-                  </span>
-                </div>
-                <DocumentPages documentId={doc.id} />
-                <DocumentItems documentId={doc.id} />
-              </div>
-            ))
+          {documents && documents.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {documents.map((doc) => (
+                <DocumentCard key={doc.id} doc={doc} />
+              ))}
+            </div>
           )}
-        </div>
+        </section>
 
         {items && items.length > 0 && (
-          <div className="mt-10 rounded-lg border border-black/10 dark:border-white/10 p-4">
-            <p className="text-3xl font-semibold text-black dark:text-zinc-50">
-              &#8377;{totalBilled.toLocaleString("en-IN")}
-            </p>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-              {(findings ?? []).length} thing{(findings ?? []).length === 1 ? "" : "s"} worth checking
-            </p>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-              &#128308; {highCount} high confidence &middot; &#128993; {mediumOrLowCount}{" "}
-              need clarification
-            </p>
-            {potentialSavings > 0 && (
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                Potential savings: &#8377;{potentialSavings.toLocaleString("en-IN")}
-              </p>
-            )}
-          </div>
+          <section className="mt-10 flex flex-col gap-3">
+            <SectionLabel>Summary</SectionLabel>
+            <CaseSummary
+              totalBilled={totalBilled}
+              findingsCount={(findings ?? []).length}
+              highCount={highCount}
+              mediumOrLowCount={mediumOrLowCount}
+              potentialSavings={potentialSavings}
+            />
+          </section>
         )}
-
-        {policies.map((policy) => (
-          <div
-            key={policy.id}
-            className="mt-10 rounded-lg border border-black/10 dark:border-white/10 p-4"
-          >
-            <p className="text-sm font-medium text-black dark:text-zinc-50">Coverage summary</p>
-            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <dt className="text-zinc-500">Sum insured</dt>
-              <dd className="text-zinc-800 dark:text-zinc-200">
-                {policy.sum_insured != null
-                  ? `₹${policy.sum_insured.toLocaleString("en-IN")}`
-                  : "Not stated"}
-              </dd>
-              <dt className="text-zinc-500">Room rent limit</dt>
-              <dd className="text-zinc-800 dark:text-zinc-200">
-                {policy.room_rent_limit != null
-                  ? `₹${policy.room_rent_limit.toLocaleString("en-IN")}/day`
-                  : "No cap stated"}
-              </dd>
-              <dt className="text-zinc-500">ICU limit</dt>
-              <dd className="text-zinc-800 dark:text-zinc-200">
-                {policy.icu_limit != null
-                  ? `₹${policy.icu_limit.toLocaleString("en-IN")}/day`
-                  : "No cap stated"}
-              </dd>
-              <dt className="text-zinc-500">Co-payment</dt>
-              <dd className="text-zinc-800 dark:text-zinc-200">
-                {policy.copay_percent != null ? `${policy.copay_percent}%` : "None stated"}
-              </dd>
-              <dt className="text-zinc-500">Deductible</dt>
-              <dd className="text-zinc-800 dark:text-zinc-200">
-                {policy.deductible != null
-                  ? `₹${policy.deductible.toLocaleString("en-IN")}`
-                  : "None stated"}
-              </dd>
-              <dt className="text-zinc-500">Consumables</dt>
-              <dd className="text-zinc-800 dark:text-zinc-200">
-                {policy.consumables_covered == null
-                  ? "Not stated"
-                  : policy.consumables_covered
-                    ? "Covered"
-                    : "Not covered"}
-              </dd>
-            </dl>
-            {policy.sub_limits && policy.sub_limits.length > 0 && (
-              <div className="mt-3 border-t border-black/5 dark:border-white/10 pt-2">
-                <p className="text-xs font-medium text-zinc-500">Category sub-limits</p>
-                <ul className="mt-1 list-disc pl-4">
-                  {policy.sub_limits.map((s, i) => (
-                    <li key={i} className="text-sm text-zinc-700 dark:text-zinc-300">
-                      {s.category}
-                      {s.limit_amount != null
-                        ? `: ₹${s.limit_amount.toLocaleString("en-IN")}`
-                        : s.limit_percent != null
-                          ? `: ${s.limit_percent}% of sum insured`
-                          : ""}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {policy.waiting_periods && policy.waiting_periods.length > 0 && (
-              <div className="mt-3 border-t border-black/5 dark:border-white/10 pt-2">
-                <p className="text-xs font-medium text-zinc-500">Waiting periods</p>
-                <ul className="mt-1 list-disc pl-4">
-                  {policy.waiting_periods.map((w, i) => (
-                    <li key={i} className="text-sm text-zinc-700 dark:text-zinc-300">
-                      {w.condition}: {w.duration}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {policy.exclusions && policy.exclusions.length > 0 && (
-              <div className="mt-3 border-t border-black/5 dark:border-white/10 pt-2">
-                <p className="text-xs font-medium text-zinc-500">Exclusions</p>
-                <ul className="mt-1 list-disc pl-4">
-                  {policy.exclusions.map((e, i) => (
-                    <li key={i} className="text-sm text-zinc-700 dark:text-zinc-300">
-                      {e}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        ))}
 
         {policies.length > 0 && (
-          <div className="mt-4">
+          <section className="mt-10 flex flex-col gap-3">
+            <SectionLabel>Insurance</SectionLabel>
+            {policies.map((policy) => (
+              <CoverageSummary key={policy.id} policy={policy} />
+            ))}
             <AskPolicy caseId={id} />
-          </div>
+            {(items ?? []).length > 0 && <CompareEstimate caseId={id} />}
+          </section>
         )}
 
-        {policies.length > 0 && (items ?? []).length > 0 && (
-          <div className="mt-4">
-            <CompareEstimate caseId={id} />
-          </div>
-        )}
-
-        <div className="mt-10">
+        <section className="mt-10 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-black dark:text-zinc-50">
-              Findings
-            </h2>
+            <SectionLabel>Findings</SectionLabel>
             <RunAuditButton caseId={id} />
           </div>
 
-          <div className="mt-4 flex flex-col gap-3">
-            {!findings || findings.length === 0 ? (
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                No findings yet. Run the audit after uploading a hospital
-                document.
-              </p>
-            ) : (
-              findings.map((finding) => (
-                <div
+          {!findings || findings.length === 0 ? (
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              No findings yet. Run the audit after uploading a hospital document.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {sortedFindings.map((finding) => (
+                <FindingCard
                   key={finding.id}
-                  className="rounded-lg border border-black/10 dark:border-white/10 p-4"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-black dark:text-zinc-50">
-                      {finding.title}
-                    </p>
-                    <div className="flex shrink-0 gap-2">
-                      <span className="rounded-full bg-black/5 dark:bg-white/10 px-2.5 py-1 text-xs text-zinc-700 dark:text-zinc-300">
-                        {finding.finding_type}
-                      </span>
-                      <span className="rounded-full bg-black/5 dark:bg-white/10 px-2.5 py-1 text-xs text-zinc-700 dark:text-zinc-300">
-                        {finding.confidence} confidence
-                      </span>
-                    </div>
-                  </div>
-                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                    {finding.description}
-                  </p>
-                  {questionsByFinding.get(finding.id) && (
-                    <div className="mt-3 border-t border-black/5 dark:border-white/10 pt-2">
-                      <p className="text-xs font-medium text-zinc-500">
-                        {finding.finding_type === "coverage_gap"
-                          ? "Ask the insurer:"
-                          : "Ask the hospital:"}
-                      </p>
-                      <ul className="mt-1 list-disc pl-4">
-                        {questionsByFinding.get(finding.id)!.map((q) => (
-                          <li key={q.id} className="text-sm text-zinc-700 dark:text-zinc-300">
-                            {q.question_text}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+                  finding={finding}
+                  questions={questionsByFinding.get(finding.id)}
+                />
+              ))}
+            </div>
+          )}
 
           {generalQuestions.length > 0 && (
-            <div className="mt-4 rounded-lg border border-black/10 dark:border-white/10 p-4">
+            <div className="rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-white/[.02] p-4">
               <p className="text-sm font-medium text-black dark:text-zinc-50">
                 Other questions to ask
               </p>
-              <ul className="mt-1 list-disc pl-4">
+              <ul className="mt-1 flex flex-col gap-1">
                 {generalQuestions.map((q) => (
                   <li key={q.id} className="text-sm text-zinc-700 dark:text-zinc-300">
                     {q.question_text}
@@ -343,7 +201,7 @@ export default async function CasePage({
               </ul>
             </div>
           )}
-        </div>
+        </section>
       </main>
     </div>
   );

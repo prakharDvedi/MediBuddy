@@ -34,12 +34,14 @@ export type ExtractedItem = {
 export type ClassifyAndExtractResult = {
   docType: (typeof DOC_TYPES)[number];
   items: ExtractedItem[];
+  suggestedTitle: string;
 };
 
 const RESPONSE_SCHEMA = {
   type: "object",
   properties: {
     doc_type: { type: "string", enum: DOC_TYPES },
+    suggested_title: { type: "string" },
     items: {
       type: "array",
       items: {
@@ -70,7 +72,7 @@ const RESPONSE_SCHEMA = {
       },
     },
   },
-  required: ["doc_type", "items"],
+  required: ["doc_type", "suggested_title", "items"],
   additionalProperties: false,
 };
 
@@ -78,6 +80,12 @@ const SYSTEM_PROMPT = `You classify a healthcare document and extract its billab
 
 doc_type: classify as one of estimate, bill, prescription, quotation, policy, approval, or unknown.
 If it's an insurance policy or approval letter (no per-item pricing table), classify accordingly and return an empty items array — item extraction only applies to hospital/pharmacy documents with priced line items.
+
+suggested_title: a short, human-readable title for this case, combining the hospital/clinic/pharmacy
+name as written on the document with the document type, e.g. "City Care Hospital — Estimate" or
+"Apollo Pharmacy — Bill". If no organization name is stated anywhere in the text, fall back to a
+generic label like "Hospital Estimate" or "Hospital Bill" — never invent an organization name.
+Keep it under 60 characters.
 
 items: for hospital-side documents (estimate, bill, prescription, quotation), extract every distinct billable line: medicines, procedures, tests, consumables, or other charges.
 - name: as written on the document.
@@ -138,5 +146,6 @@ export async function classifyAndExtractItems(
   return {
     docType: parsed.doc_type ?? "unknown",
     items: parsed.items ?? [],
+    suggestedTitle: parsed.suggested_title || "Untitled case",
   };
 }

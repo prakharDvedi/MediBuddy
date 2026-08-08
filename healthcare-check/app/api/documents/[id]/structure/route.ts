@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { classifyAndExtractItems } from "@/lib/documents/structure";
+import { maybeSetCaseTitle } from "@/lib/documents/case-title";
 import { NextResponse } from "next/server";
 
 export async function POST(
@@ -69,6 +70,8 @@ export async function POST(
       .from("documents")
       .update({ status: "structured", doc_type: updatedDocType })
       .eq("id", documentId);
+
+    await maybeSetCaseTitle(supabase, documentId, result.suggestedTitle);
 
     return NextResponse.json({ docType: result.docType, itemCount: result.items.length });
   } catch (err) {

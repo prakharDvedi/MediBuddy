@@ -11,11 +11,13 @@ export type ExtractedPolicy = {
   exclusions: string[];
   consumablesCovered: boolean | null;
   otherConditions: string[];
+  suggestedTitle: string;
 };
 
 const RESPONSE_SCHEMA = {
   type: "object",
   properties: {
+    suggested_title: { type: "string" },
     sum_insured: { type: ["number", "null"] },
     room_rent_limit: { type: ["number", "null"] },
     icu_limit: { type: ["number", "null"] },
@@ -51,6 +53,7 @@ const RESPONSE_SCHEMA = {
     other_conditions: { type: "array", items: { type: "string" } },
   },
   required: [
+    "suggested_title",
     "sum_insured",
     "room_rent_limit",
     "icu_limit",
@@ -67,6 +70,10 @@ const RESPONSE_SCHEMA = {
 
 const SYSTEM_PROMPT = `You extract structured coverage details from a health insurance policy document.
 
+suggested_title: a short, human-readable title for this case, combining the insurer name as written
+on the document with "Policy", e.g. "SecureLife Health Insurance — Policy" or "HDFC ERGO — Policy".
+If no insurer name is stated anywhere in the text, fall back to a generic label like "Insurance
+Policy" — never invent an insurer name. Keep it under 60 characters.
 sum_insured: the total coverage amount for the policy period, as a plain number (no currency symbols).
 room_rent_limit: the per-day room rent cap, as a plain number. If it's stated only as a percentage of sum insured (e.g. "1% of sum insured per day"), convert it using the sum insured if both are given; otherwise use null.
 icu_limit: the per-day ICU room cap, as a plain number, same rules as room_rent_limit.
@@ -126,6 +133,7 @@ export async function extractPolicyDetails(
   const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? "{}");
 
   return {
+    suggestedTitle: parsed.suggested_title || "Untitled case",
     sumInsured: parsed.sum_insured ?? null,
     roomRentLimit: parsed.room_rent_limit ?? null,
     icuLimit: parsed.icu_limit ?? null,

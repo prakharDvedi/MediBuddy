@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { extractPolicyDetails } from "@/lib/documents/policy";
 import { chunkPolicyPages } from "@/lib/rag/policy";
+import { maybeSetCaseTitle } from "@/lib/documents/case-title";
 import { NextResponse } from "next/server";
 
 export async function POST(
@@ -87,6 +88,8 @@ export async function POST(
       );
       if (chunksError) throw new Error(chunksError.message);
     }
+
+    await maybeSetCaseTitle(supabase, documentId, policy.suggestedTitle);
 
     return NextResponse.json({ ok: true, chunkCount: chunks.length });
   } catch (err) {
