@@ -1,0 +1,12 @@
+# env
+.env
+.env.local
+
+# local tooling / agent state
+.claude/
+.tokensave/
+plan.md
+
+# OS cruft
+.DS_Store
+Thumbs.db

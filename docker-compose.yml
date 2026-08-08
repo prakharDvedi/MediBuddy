@@ -1,0 +1,17 @@
+services:
+  web:
+    image: node:22-bookworm
+    working_dir: /workspace/healthcare-check
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/workspace
+      - node_modules:/workspace/healthcare-check/node_modules
+    environment:
+      - WATCHPACK_POLLING=true
+    env_file:
+      - .env
+
+volumes:
+  node_modules:
