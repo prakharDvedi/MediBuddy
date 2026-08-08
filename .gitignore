@@ -6,6 +6,7 @@
 .claude/
 .tokensave/
 plan.md
+status.md
 
 # OS cruft
 .DS_Store
