@@ -1,5 +1,4 @@
-import { DocumentPages } from "@/components/document-pages";
-import { DocumentItems } from "@/components/document-items";
+import { DocumentDetails } from "@/components/document-details";
 
 const STATUS_LABELS: Record<string, string> = {
   uploaded: "Uploaded",
@@ -46,10 +45,7 @@ export function DocumentCard({ doc }: { doc: Document }) {
           {STATUS_LABELS[doc.status] ?? doc.status}
         </span>
       </div>
-      <div className="mt-2 flex gap-4">
-        <DocumentPages documentId={doc.id} />
-        <DocumentItems documentId={doc.id} />
-      </div>
+      <DocumentDetails documentId={doc.id} />
     </div>
   );
 }
