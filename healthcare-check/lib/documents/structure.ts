@@ -16,6 +16,7 @@ export const ITEM_TYPES = [
   "test",
   "consumable",
   "charge",
+  "service",
   "misc",
 ] as const;
 
@@ -29,6 +30,21 @@ export type ExtractedItem = {
   source_page: number | null;
   raw_text: string;
   confidence: "high" | "medium" | "low";
+  medicine_identity: {
+    brand_name: string | null;
+    components: {
+      ingredient_name: string;
+      strength_value: number | null;
+      strength_unit: string | null;
+      denominator_value: number | null;
+      denominator_unit: string | null;
+    }[];
+    dosage_form: string | null;
+    route: string | null;
+    pack_text: string | null;
+    pack_quantity: number | null;
+    pack_unit: string | null;
+  } | null;
 };
 
 export type ClassifyAndExtractResult = {
@@ -56,6 +72,53 @@ const RESPONSE_SCHEMA = {
           source_page: { type: ["integer", "null"] },
           raw_text: { type: "string" },
           confidence: { type: "string", enum: ["high", "medium", "low"] },
+          medicine_identity: {
+            anyOf: [
+              { type: "null" },
+              {
+                type: "object",
+                properties: {
+                  brand_name: { type: ["string", "null"] },
+                  components: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        ingredient_name: { type: "string" },
+                        strength_value: { type: ["number", "null"] },
+                        strength_unit: { type: ["string", "null"] },
+                        denominator_value: { type: ["number", "null"] },
+                        denominator_unit: { type: ["string", "null"] },
+                      },
+                      required: [
+                        "ingredient_name",
+                        "strength_value",
+                        "strength_unit",
+                        "denominator_value",
+                        "denominator_unit",
+                      ],
+                      additionalProperties: false,
+                    },
+                  },
+                  dosage_form: { type: ["string", "null"] },
+                  route: { type: ["string", "null"] },
+                  pack_text: { type: ["string", "null"] },
+                  pack_quantity: { type: ["number", "null"] },
+                  pack_unit: { type: ["string", "null"] },
+                },
+                required: [
+                  "brand_name",
+                  "components",
+                  "dosage_form",
+                  "route",
+                  "pack_text",
+                  "pack_quantity",
+                  "pack_unit",
+                ],
+                additionalProperties: false,
+              },
+            ],
+          },
         },
         required: [
           "item_type",
@@ -67,6 +130,7 @@ const RESPONSE_SCHEMA = {
           "source_page",
           "raw_text",
           "confidence",
+          "medicine_identity",
         ],
         additionalProperties: false,
       },
@@ -87,9 +151,10 @@ name as written on the document with the document type, e.g. "City Care Hospital
 generic label like "Hospital Estimate" or "Hospital Bill" — never invent an organization name.
 Keep it under 60 characters.
 
-items: for hospital-side documents (estimate, bill, prescription, quotation), extract every distinct billable line: medicines, procedures, tests, consumables, or other charges.
+items: for hospital-side documents (estimate, bill, prescription, quotation), extract every distinct billable line: medicines, procedures, tests, consumables, services, or other charges. Use item_type "service" for a priced service that is not a procedure, test, medicine, consumable, or general charge.
 - name: as written on the document.
 - normalized_name: lowercase, strip punctuation, keep strength/dosage/unit if present (e.g. "paracetamol 500mg tablet"), so it can be matched against a reference price list later.
+- medicine_identity: for medicine items only, extract the identity fields needed for safe matching. Keep the active ingredient or salt and every combination component exactly as stated. Normalize strength to a number plus unit (for example 1000 and "mg" rather than 1 and "g") when the conversion is explicit. Keep dosage_form and route separate. Preserve pack_text, pack_quantity, and pack_unit only when the bill states them. Use denominator_value and denominator_unit only for concentration strength such as "5 mg per 5 ml"; never use them for a pack count or sale unit such as tablets, capsules, vials, strips, or packs. For non-medicine items, return null.
 - quantity, unit_price, total_price: numbers only, no currency symbols. Use null if genuinely not stated — never guess a number that isn't on the document.
 - source_page: the page number (as given in the "--- Page N ---" markers) the line appears on.
 - raw_text: the original line/row text as it appears, for evidence.
@@ -145,7 +210,10 @@ export async function classifyAndExtractItems(
 
   return {
     docType: parsed.doc_type ?? "unknown",
-    items: parsed.items ?? [],
+    items: (parsed.items ?? []).map((item: ExtractedItem) => ({
+      ...item,
+      medicine_identity: item.medicine_identity ?? null,
+    })),
     suggestedTitle: parsed.suggested_title || "Untitled case",
   };
 }

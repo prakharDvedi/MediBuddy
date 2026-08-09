@@ -10,6 +10,11 @@ export type ExtractedItemRow = {
   source_page: number | null;
   raw_text: string | null;
   confidence: string | null;
+  medicine_identity: Record<string, unknown> | null;
+  medicine_product_id: string | null;
+  medicine_match_status: string | null;
+  medicine_match_confidence: string | null;
+  medicine_match_reason: string | null;
 };
 
 export type ReferenceItemRow = {
@@ -21,6 +26,7 @@ export type ReferenceItemRow = {
   unit: string | null;
   source_name: string;
   source_url: string | null;
+  medicine_product_id: string | null;
 };
 
 export type InsurancePolicyRow = {

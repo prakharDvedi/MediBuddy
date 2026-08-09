@@ -60,6 +60,7 @@ export async function POST(
           source_page: item.source_page,
           raw_text: item.raw_text,
           confidence: item.confidence,
+          medicine_identity: item.medicine_identity,
         })),
       );
       if (insertError) throw new Error(insertError.message);
