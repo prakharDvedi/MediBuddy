@@ -75,6 +75,19 @@ function Citation({
 function Evidence({ evidence }: { evidence: Record<string, unknown> | null }) {
   if (!evidence) return null;
 
+  if (Array.isArray(evidence.price_observations)) {
+    const page = typeof evidence.page === "number" ? evidence.page : null;
+    const quote = typeof evidence.original_text === "string" ? evidence.original_text : null;
+    return (
+      <>
+        <MedicinePriceEvidence evidence={evidence} />
+        <div className="mt-2">
+          <Citation page={page} quote={quote} />
+        </div>
+      </>
+    );
+  }
+
   const hospitalPrice = evidence.hospital_price;
   const referencePrice = evidence.reference_price;
   const hasPriceComparison =
@@ -150,7 +163,9 @@ export function FindingCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium text-zinc-500">
-            {TYPE_LABELS[finding.finding_type] ?? finding.finding_type}
+            {finding.finding_type === "medicine_savings" && finding.evidence && typeof finding.evidence.potential_savings !== "number"
+              ? "Potential price difference"
+              : TYPE_LABELS[finding.finding_type] ?? finding.finding_type}
           </p>
           <p className="mt-0.5 text-sm font-semibold text-black dark:text-zinc-50">
             {finding.title}
@@ -180,3 +195,4 @@ export function FindingCard({
     </div>
   );
 }
+import { MedicinePriceEvidence } from "./medicine-price-evidence";

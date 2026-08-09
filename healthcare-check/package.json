@@ -6,7 +6,8 @@
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:medicine": "node --experimental-strip-types --test tests/medicine-regression.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",

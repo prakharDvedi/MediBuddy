@@ -16,6 +16,10 @@ export function checkMedicineSavings(
 
   for (const item of items) {
     if (item.item_type !== "medicine") continue;
+    // Once the medicine model has attempted resolution, the new observation
+    // path is authoritative. This prevents a linked NPPA row from being
+    // double-counted against an old demo reference row.
+    if (item.medicine_match_status) continue;
     if (!item.normalized_name || item.unit_price == null) continue;
 
     const reference = referenceByName.get(item.normalized_name);
