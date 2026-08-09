@@ -7,8 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "npm run test:medicine && npm run test:policy && npm run test:evaluation",
     "test:medicine": "node --experimental-strip-types --test tests/medicine-regression.test.ts",
-    "test:policy": "node --experimental-strip-types --test tests/policy-extraction.test.ts"
+    "test:policy": "node --experimental-strip-types --test tests/policy-extraction.test.ts",
+    "test:evaluation": "node --experimental-strip-types --test tests/evaluation.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",

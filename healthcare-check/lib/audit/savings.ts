@@ -1,5 +1,5 @@
 import type { ExtractedItemRow, ReferenceItemRow, Finding } from "./types";
-import { unitUnverifiedFinding, verifyReferenceUnit } from "./unit";
+import { unitUnverifiedFinding, verifyReferenceUnit } from "./unit.ts";
 
 const OVERAGE_THRESHOLD = 1.2;
 

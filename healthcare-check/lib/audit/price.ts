@@ -1,5 +1,5 @@
 import type { ExtractedItemRow, ReferenceItemRow, Finding } from "./types";
-import { unitUnverifiedFinding, verifyReferenceUnit } from "./unit";
+import { unitUnverifiedFinding, verifyReferenceUnit } from "./unit.ts";
 
 // How far above the reference price a billed item has to be before it's
 // worth surfacing — small variance is normal, this isn't meant to catch
