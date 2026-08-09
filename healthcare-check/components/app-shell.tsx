@@ -6,10 +6,10 @@ import { cn } from "@/components/ui";
 
 export function Brand({ href = "/", variant = "compact" }: { href?: string; variant?: "compact" | "full" }) {
   if (variant === "full") {
-    return <Link href={href} className="focus-ring inline-flex h-12 w-48 items-center rounded-lg sm:w-56"><Image src="/logo/inwebsite-logo.webp" alt="MediBud — Understand. Verify. Save." width={946} height={279} priority className="h-full w-full object-contain object-center" /></Link>;
+    return <Link href={href} className="focus-ring inline-flex items-center gap-2.5 rounded-lg py-1"><Image src="/logo/logo.webp" alt="" width={48} height={48} priority className="h-9 w-9 rounded-xl object-cover mix-blend-multiply" /><span className="flex flex-col"><span className="text-lg font-semibold leading-none tracking-tight"><span className="text-primary">Med</span><span className="text-success">Bud</span></span><span className="mt-1 text-[0.5rem] font-semibold uppercase leading-none tracking-[0.18em] text-text-muted">Understand. Verify. Save.</span></span></Link>;
   }
 
-  return <Link href={href} className="focus-ring inline-flex items-center gap-2 rounded-lg"><Image src="/logo/logo.webp" alt="" width={48} height={48} className="h-8 w-8 rounded-xl object-cover" /><span className="text-base font-semibold tracking-tight text-text-primary">MediBud</span></Link>;
+  return <Link href={href} className="focus-ring inline-flex items-center gap-2 rounded-lg"><Image src="/logo/logo.webp" alt="" width={48} height={48} className="h-8 w-8 rounded-xl object-cover mix-blend-multiply" /><span className="text-base font-semibold tracking-tight text-text-primary">MedBud</span></Link>;
 }
 
 export function PublicHeader() {

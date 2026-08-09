@@ -107,7 +107,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_19rem]">
           <div className="min-w-0">
             <section aria-labelledby="documents-heading">
-              <SectionHeader headingId="documents-heading" eyebrow="Documents" title="Add or review your documents" description="Upload a bill, estimate, policy, or supporting page. MediBud keeps the source close to the result." />
+              <SectionHeader headingId="documents-heading" eyebrow="Documents" title="Add or review your documents" description="Upload a bill, estimate, policy, or supporting page. MedBud keeps the source close to the result." />
               <div className="mt-5 grid gap-3"><UploadDocument caseId={id} />{documents && documents.length > 0 && documents.map((document) => <DocumentCard key={document.id} doc={document} />)}</div>
             </section>
 

@@ -24,7 +24,7 @@ export default function Home() {
               Understand the bill. Know what to ask next.
             </h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-text-muted sm:text-lg">
-              MediBud turns hospital bills and insurance policies into plain-language summaries, evidence-backed findings, and practical questions.
+              MedBud turns hospital bills and insurance policies into plain-language summaries, evidence-backed findings, and practical questions.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/signup" className="focus-ring inline-flex min-h-11 items-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-white hover:bg-primary-hover">
@@ -35,7 +35,7 @@ export default function Home() {
               </Link>
             </div>
             <p className="mt-5 max-w-lg text-xs leading-5 text-text-muted">
-              MediBud helps you ask better questions. It does not diagnose, judge clinical care, or decide that a hospital has acted unlawfully.
+              MedBud helps you ask better questions. It does not diagnose, judge clinical care, or decide that a hospital has acted unlawfully.
             </p>
           </div>
 
@@ -101,7 +101,7 @@ export default function Home() {
         </section>
 
         <section className="content-width flex flex-col gap-6 py-10 text-xs leading-5 text-text-muted sm:flex-row sm:items-start sm:justify-between">
-          <p className="max-w-2xl">MediBud keeps your original documents separate from extracted information and shows where important numbers came from.</p>
+          <p className="max-w-2xl">MedBud keeps your original documents separate from extracted information and shows where important numbers came from.</p>
           <p className="max-w-sm sm:text-right">Reference prices are not hospital billing caps or guaranteed recoverable amounts. Always confirm with your hospital, pharmacist, or insurer.</p>
         </section>
       </main>

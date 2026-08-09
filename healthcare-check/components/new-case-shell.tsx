@@ -76,7 +76,7 @@ export function NewCaseShell({ intent }: { intent: CaseIntent }) {
           />
         </div>
       </div>
-      <p className="mt-4 text-xs leading-5 text-text-muted">Your original document stays private. MediBud shows source pages alongside important findings so you can verify the details yourself.</p>
+      <p className="mt-4 text-xs leading-5 text-text-muted">Your original document stays private. MedBud shows source pages alongside important findings so you can verify the details yourself.</p>
     </div>
   );
 }

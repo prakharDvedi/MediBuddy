@@ -62,7 +62,7 @@ export function QuestionsChecklist({ items }: { items: ChecklistItem[] }) {
         <ChecklistGroup audience="hospital" items={hospitalQuestions} />
         <ChecklistGroup audience="insurer" items={insurerQuestions} />
       </div>
-      <p className="mt-5 border-t border-info/20 pt-4 text-xs leading-5 text-text-muted">These are neutral questions based on what MediBud found. They are not conclusions about wrongdoing.</p>
+      <p className="mt-5 border-t border-info/20 pt-4 text-xs leading-5 text-text-muted">These are neutral questions based on what MedBud found. They are not conclusions about wrongdoing.</p>
     </div>
   );
 }

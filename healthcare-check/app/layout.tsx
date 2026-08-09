@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MediBud | Understand your healthcare costs",
+  title: "MedBud | Understand your healthcare costs",
   description: "Understand your hospital bill, insurance policy, and next questions.",
   icons: {
     icon: "/logo/logo.webp",

@@ -26,7 +26,7 @@ export function CaseSummary({ totalBilled, findingsCount, highCount, mediumOrLow
         <Surface tone="info" className="flex flex-col justify-center">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-info">What happens next</p>
           <p className="mt-2 text-lg font-semibold text-text-primary">Review each finding with its source page.</p>
-          <p className="mt-1 text-sm leading-6 text-text-muted">MediBud keeps the interpretation close to the evidence so you can decide what to ask.</p>
+          <p className="mt-1 text-sm leading-6 text-text-muted">MedBud keeps the interpretation close to the evidence so you can decide what to ask.</p>
         </Surface>
       )}
     </div>

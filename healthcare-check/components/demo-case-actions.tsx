@@ -45,7 +45,7 @@ export function DemoCaseActions() {
     <section aria-labelledby="demo-heading" className="mt-10 rounded-[1.25rem] border border-warning/25 bg-warning-bg/50 p-5 sm:p-6">
       <div className="max-w-2xl">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-warning">Guided demos</p>
-        <h2 id="demo-heading" className="mt-1 text-2xl font-semibold tracking-tight text-text-primary">See MediBud in action</h2>
+        <h2 id="demo-heading" className="mt-1 text-2xl font-semibold tracking-tight text-text-primary">See MedBud in action</h2>
         <p className="mt-2 text-sm leading-6 text-text-muted">These are controlled synthetic documents, created privately for your account, to demonstrate all capabilities. They are not real medical or insurance records.</p>
       </div>
       <div className="mt-5 grid gap-3 md:grid-cols-2">
