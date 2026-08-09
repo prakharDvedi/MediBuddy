@@ -48,13 +48,19 @@ export async function POST(
   }
 
   try {
-    const policy = await extractPolicyDetails(
+    const chunks = chunkPolicyPages(
       pages.map((p) => ({ pageNumber: p.page_number, content: p.content ?? "" })),
     );
+    if (chunks.length === 0) {
+      return NextResponse.json({ error: "No policy text could be chunked" }, { status: 400 });
+    }
 
-    const { error: upsertError } = await supabase.from("insurance_policies").upsert(
-      {
-        document_id: documentId,
+    const extraction = await extractPolicyDetails(chunks);
+    const { policy } = extraction;
+
+    const { error: publishError } = await supabase.rpc("replace_policy_extraction", {
+      p_document_id: documentId,
+      p_policy: {
         sum_insured: policy.sumInsured,
         room_rent_limit: policy.roomRentLimit,
         icu_limit: policy.icuLimit,
@@ -66,33 +72,25 @@ export async function POST(
         consumables_covered: policy.consumablesCovered,
         other_conditions: policy.otherConditions,
       },
-      { onConflict: "document_id" },
-    );
-    if (upsertError) throw new Error(upsertError.message);
-
-    const chunks = chunkPolicyPages(
-      pages.map((p) => ({ pageNumber: p.page_number, content: p.content ?? "" })),
-    );
-
-    await supabase.from("policy_chunks").delete().eq("document_id", documentId);
-
-    if (chunks.length > 0) {
-      const { error: chunksError } = await supabase.from("policy_chunks").insert(
-        chunks.map((chunk, index) => ({
-          document_id: documentId,
-          chunk_index: index,
-          page: chunk.page,
-          section_title: chunk.sectionTitle,
-          content: chunk.content,
-        })),
-      );
-      if (chunksError) throw new Error(chunksError.message);
-    }
+      p_provenance: extraction.provenance,
+      p_chunks: extraction.chunks.map((chunk, index) => ({
+        chunk_index: index,
+        page: chunk.page,
+        section_title: chunk.sectionTitle,
+        content: chunk.content,
+      })),
+    });
+    if (publishError) throw new Error(publishError.message);
 
     await maybeSetCaseTitle(supabase, documentId, policy.suggestedTitle);
 
-    return NextResponse.json({ ok: true, chunkCount: chunks.length });
+    return NextResponse.json({ ok: true, chunkCount: extraction.chunks.length });
   } catch (err) {
+    console.error("[api/documents/policy] extraction failed", {
+      documentId,
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     await supabase.from("documents").update({ status: "error" }).eq("id", documentId);
     const message = err instanceof Error ? err.message : "Policy extraction failed";
     return NextResponse.json({ error: message }, { status: 500 });

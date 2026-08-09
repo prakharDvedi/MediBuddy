@@ -23,6 +23,9 @@ export async function POST(
   if (docError || !document) {
     return NextResponse.json({ error: "Document not found" }, { status: 404 });
   }
+  if (document.doc_type === "policy") {
+    return NextResponse.json({ docType: "policy", itemCount: 0, skipped: true });
+  }
 
   const { data: pages, error: pagesError } = await supabase
     .from("document_pages")

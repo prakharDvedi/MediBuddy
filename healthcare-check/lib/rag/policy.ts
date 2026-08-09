@@ -30,6 +30,37 @@ export type DerivedPolicyFact = {
 // title from flattened text risks mislabeling a citation, which is worse
 // than a plain section number.
 const SECTION_MARKER_RE = /\b(Section|Clause|Part)\s+(\d+)\s*:/g;
+export const POLICY_CHUNK_MAX_TOKENS = 2800;
+const APPROX_CHARS_PER_TOKEN = 4;
+
+export function estimatePolicyTokens(text: string): number {
+  return Math.ceil(text.length / APPROX_CHARS_PER_TOKEN);
+}
+
+function splitTextToBudget(text: string, maxChars: number): string[] {
+  const parts: string[] = [];
+  let remaining = text.trim();
+
+  while (remaining.length > maxChars) {
+    let splitAt = remaining.lastIndexOf(" ", maxChars);
+    if (splitAt < Math.floor(maxChars * 0.5)) splitAt = maxChars;
+    const part = remaining.slice(0, splitAt).trim();
+    if (part) parts.push(part);
+    remaining = remaining.slice(splitAt).trim();
+  }
+
+  if (remaining) parts.push(remaining);
+  return parts;
+}
+
+export function splitPolicyChunk(chunk: PolicyChunk, maxTokens = POLICY_CHUNK_MAX_TOKENS): PolicyChunk[] {
+  const maxChars = maxTokens * APPROX_CHARS_PER_TOKEN;
+  return splitTextToBudget(chunk.content, maxChars).map((content) => ({
+    page: chunk.page,
+    sectionTitle: chunk.sectionTitle,
+    content,
+  }));
+}
 
 /**
  * Splits a policy document's per-page text into search/citation chunks.
@@ -37,8 +68,50 @@ const SECTION_MARKER_RE = /\b(Section|Clause|Part)\s+(\d+)\s*:/g;
  */
 export function chunkPolicyPages(
   pages: { pageNumber: number; content: string }[],
+  maxTokens = POLICY_CHUNK_MAX_TOKENS,
 ): PolicyChunk[] {
   const chunks: PolicyChunk[] = [];
+  const maxChars = maxTokens * APPROX_CHARS_PER_TOKEN;
+
+  function addPageSegments(
+    pageNumber: number,
+    segments: { sectionTitle: string | null; content: string }[],
+  ) {
+    let current: PolicyChunk | null = null;
+
+    function flush() {
+      if (current) chunks.push(current);
+      current = null;
+    }
+
+    for (const segment of segments) {
+      const pieces = splitTextToBudget(segment.content, maxChars);
+      if (pieces.length > 1) {
+        flush();
+        for (const content of pieces) {
+          chunks.push({ page: pageNumber, sectionTitle: segment.sectionTitle, content });
+        }
+        continue;
+      }
+
+      const content = pieces[0];
+      if (!content) continue;
+      if (!current) {
+        current = { page: pageNumber, sectionTitle: segment.sectionTitle, content };
+        continue;
+      }
+
+      const combined: string = `${current.content}\n\n${content}`;
+      if (combined.length <= maxChars) {
+        current = { ...current, content: combined };
+      } else {
+        flush();
+        current = { page: pageNumber, sectionTitle: segment.sectionTitle, content };
+      }
+    }
+
+    flush();
+  }
 
   for (const page of pages) {
     const content = page.content ?? "";
@@ -46,12 +119,13 @@ export function chunkPolicyPages(
 
     if (matches.length === 0) {
       const trimmed = content.trim();
-      if (trimmed) chunks.push({ page: page.pageNumber, sectionTitle: null, content: trimmed });
+      if (trimmed) addPageSegments(page.pageNumber, [{ sectionTitle: null, content: trimmed }]);
       continue;
     }
 
+    const segments: { sectionTitle: string | null; content: string }[] = [];
     const preamble = content.slice(0, matches[0].index).trim();
-    if (preamble) chunks.push({ page: page.pageNumber, sectionTitle: null, content: preamble });
+    if (preamble) segments.push({ sectionTitle: null, content: preamble });
 
     for (let i = 0; i < matches.length; i++) {
       const start = matches[i].index;
@@ -59,8 +133,10 @@ export function chunkPolicyPages(
       const body = content.slice(start, end).trim();
       if (!body) continue;
       const label = `${matches[i][1]} ${matches[i][2]}`;
-      chunks.push({ page: page.pageNumber, sectionTitle: label, content: body });
+      segments.push({ sectionTitle: label, content: body });
     }
+
+    addPageSegments(page.pageNumber, segments);
   }
 
   return chunks;
