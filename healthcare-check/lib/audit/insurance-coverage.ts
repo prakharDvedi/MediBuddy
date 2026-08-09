@@ -1,4 +1,14 @@
 import type { InsurancePolicyRow, Finding } from "./types";
+import { policyLineage, withLineage } from "./lineage.ts";
+
+function policyEvidence(
+  policy: InsurancePolicyRow,
+  field: string,
+  ruleId: string,
+  evidence: Record<string, unknown>,
+): Record<string, unknown> {
+  return withLineage(evidence, policyLineage(policy, field, ruleId));
+}
 
 /**
  * Flags coverage terms in an insurance policy that are worth understanding
@@ -21,7 +31,7 @@ export function checkInsuranceCoverage(policies: InsurancePolicyRow[]): Finding[
           `The policy caps room rent at ${policy.room_rent_limit} per day. Rooms billed above this ` +
           `cap can trigger a proportional deduction on other charges too, not just the room rent line — ` +
           `worth confirming with the insurer before choosing a room category.`,
-        evidence: { room_rent_limit: policy.room_rent_limit },
+        evidence: policyEvidence(policy, "room_rent_limit", "audit.coverage.room-rent-limit", { room_rent_limit: policy.room_rent_limit }),
         confidence: "high",
         related_item_id: null,
       });
@@ -33,7 +43,7 @@ export function checkInsuranceCoverage(policies: InsurancePolicyRow[]): Finding[
         finding_type: "coverage_gap",
         title: "ICU charges are capped",
         description: `The policy caps ICU room charges at ${policy.icu_limit} per day.`,
-        evidence: { icu_limit: policy.icu_limit },
+        evidence: policyEvidence(policy, "icu_limit", "audit.coverage.icu-limit", { icu_limit: policy.icu_limit }),
         confidence: "high",
         related_item_id: null,
       });
@@ -47,7 +57,7 @@ export function checkInsuranceCoverage(policies: InsurancePolicyRow[]): Finding[
         description:
           `You bear ${policy.copay_percent}% of the admissible claim amount out of pocket — the ` +
           `insurer covers the rest.`,
-        evidence: { copay_percent: policy.copay_percent },
+        evidence: policyEvidence(policy, "copay_percent", "audit.coverage.copay", { copay_percent: policy.copay_percent }),
         confidence: "high",
         related_item_id: null,
       });
@@ -59,7 +69,7 @@ export function checkInsuranceCoverage(policies: InsurancePolicyRow[]): Finding[
         finding_type: "coverage_gap",
         title: `Deductible of ${policy.deductible} applies`,
         description: `The first ${policy.deductible} of each claim is paid out of pocket before the policy pays.`,
-        evidence: { deductible: policy.deductible },
+        evidence: policyEvidence(policy, "deductible", "audit.coverage.deductible", { deductible: policy.deductible }),
         confidence: "high",
         related_item_id: null,
       });
@@ -73,7 +83,7 @@ export function checkInsuranceCoverage(policies: InsurancePolicyRow[]): Finding[
         description:
           `The policy explicitly excludes consumables (items like gloves, syringes, PPE kits). These are ` +
           `often billed separately by hospitals and would be out of pocket.`,
-        evidence: {},
+        evidence: policyEvidence(policy, "consumables_covered", "audit.coverage.consumables", {}),
         confidence: "high",
         related_item_id: null,
       });
@@ -96,7 +106,7 @@ export function checkInsuranceCoverage(policies: InsurancePolicyRow[]): Finding[
             )
             .join(", ") +
           ".",
-        evidence: { sub_limits: policy.sub_limits },
+        evidence: policyEvidence(policy, "sub_limits", "audit.coverage.sub-limits", { sub_limits: policy.sub_limits }),
         confidence: "high",
         related_item_id: null,
       });
@@ -111,7 +121,7 @@ export function checkInsuranceCoverage(policies: InsurancePolicyRow[]): Finding[
           `Claims for these conditions aren't covered until their waiting period elapses: ` +
           policy.waiting_periods.map((w) => `${w.condition} (${w.duration})`).join(", ") +
           ".",
-        evidence: { waiting_periods: policy.waiting_periods },
+        evidence: policyEvidence(policy, "waiting_periods", "audit.coverage.waiting-periods", { waiting_periods: policy.waiting_periods }),
         confidence: "high",
         related_item_id: null,
       });

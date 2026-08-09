@@ -1,5 +1,6 @@
 import type { ExtractedItemRow, ReferenceItemRow, Finding } from "./types";
 import { unitUnverifiedFinding, verifyReferenceUnit } from "./unit.ts";
+import { itemLineage, withLineage } from "./lineage.ts";
 
 // How far above the reference price a billed item has to be before it's
 // worth surfacing — small variance is normal, this isn't meant to catch
@@ -40,7 +41,7 @@ export function checkPrices(
           `${reference.reference_price} (${reference.source_name}). ` +
           `The billed amount is higher than the available reference, so this is worth checking ` +
           `with the hospital; it is not by itself proof of an overcharge.`,
-        evidence: {
+        evidence: withLineage({
           item: item.name,
           hospital_price: item.unit_price,
           reference_price: reference.reference_price,
@@ -49,7 +50,19 @@ export function checkPrices(
           source_url: reference.source_url,
           page: item.source_page,
           original_text: item.raw_text,
-        },
+        }, itemLineage(item, "audit.price.overage", {
+          field: "unit_price",
+          referenceItemId: reference.id,
+          calculation: {
+            formula: "hospital_price > reference_price * threshold",
+            inputs: {
+              hospital_price: item.unit_price,
+              reference_price: reference.reference_price,
+              threshold: OVERAGE_THRESHOLD,
+            },
+            output: Number((item.unit_price - reference.reference_price).toFixed(2)),
+          },
+        })),
         confidence: item.confidence === "low" ? "low" : "medium",
         related_item_id: item.id,
       });

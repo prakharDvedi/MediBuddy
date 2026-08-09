@@ -42,7 +42,22 @@ export type InsurancePolicyRow = {
   exclusions: string[] | null;
   consumables_covered: boolean | null;
   other_conditions: string[] | null;
+  extraction_provenance: PolicyProvenance | null;
 };
+
+export type PolicyProvenanceValue = {
+  value: unknown;
+  page: number | null;
+  section: string | null;
+  chunk_index?: number | null;
+};
+
+export type PolicyProvenanceEntry = {
+  values: PolicyProvenanceValue[];
+  status: string;
+};
+
+export type PolicyProvenance = Record<string, PolicyProvenanceEntry>;
 
 export type Finding = {
   document_id: string | null;

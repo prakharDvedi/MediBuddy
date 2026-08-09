@@ -1,6 +1,7 @@
 import { normalizeMedicineIdentity } from "../medicines/normalize.ts";
 import type { MedicinePriceObservation, MedicineResolution, NormalizedMedicineIdentity } from "../medicines/types.ts";
 import type { ExtractedItemRow, Finding } from "./types";
+import { itemLineage, withLineage } from "./lineage.ts";
 
 const OVERAGE_THRESHOLD = 1.2;
 
@@ -179,7 +180,7 @@ function unitFinding(
       `Unit could not be verified for this comparison. The bill does not clearly show the same ` +
       `${observation.source_kind === "nppa" ? "sale unit" : "pack context"} as the ${sourceLabel(observation)}. ` +
       `No price difference was calculated. This is worth checking with the hospital or pharmacist.`,
-    evidence: {
+    evidence: withLineage({
       item: item.name,
       medicine_identity: resolution.identity.canonical_text,
       match_method: resolution.method,
@@ -190,7 +191,14 @@ function unitFinding(
       unit_reason: unitCheck.reason,
       page: item.source_page,
       original_text: item.raw_text,
-    },
+    }, itemLineage(item, "audit.medicine.unit-compatibility", {
+      field: "unit_price",
+      medicineIdentity: resolution.identity.canonical_text,
+      canonicalEntityId: resolution.product_id,
+      canonicalEntityType: resolution.product_id ? "medicine_product" : null,
+      observationId: observation.id,
+      sourceKind: observation.source_kind,
+    })),
     confidence: "low",
     related_item_id: item.id,
   };
@@ -254,7 +262,7 @@ export function checkMedicinePriceObservations(
         `${primaryIsNppa ? "Potential savings" : "Potential price difference"}: ₹${potentialPriceDifference}. ` +
         `This is worth investigating with the hospital or pharmacist. Estimated from the available reference price. ` +
         `This does not guarantee that this amount is recoverable or that the hospital charge is unlawful.`,
-      evidence: {
+      evidence: withLineage({
         item: item.name,
         medicine_identity: resolution.identity.canonical_text,
         match_method: resolution.method,
@@ -269,7 +277,24 @@ export function checkMedicinePriceObservations(
         price_observations: sourceEvidence,
         page: item.source_page,
         original_text: item.raw_text,
-      },
+      }, itemLineage(item, "audit.medicine.observation-overage", {
+        field: "unit_price",
+        medicineIdentity: resolution.identity.canonical_text,
+        canonicalEntityId: resolution.product_id,
+        canonicalEntityType: "medicine_product",
+        observationId: primary.observation.id,
+        sourceKind: primary.observation.source_kind,
+        calculation: {
+          formula: "(hospital_price - reference_price) * quantity",
+          inputs: {
+            hospital_price: hospitalPrice,
+            reference_price: primary.observation.amount,
+            quantity,
+            threshold: OVERAGE_THRESHOLD,
+          },
+          output: potentialPriceDifference,
+        },
+      })),
       confidence: item.confidence === "low" ? "low" : primaryIsNppa ? "medium" : "low",
       related_item_id: item.id,
     });

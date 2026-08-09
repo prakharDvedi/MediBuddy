@@ -9,6 +9,7 @@ import { checkUnexplained } from "../lib/audit/unexplained.ts";
 import { checkDuplicates } from "../lib/audit/duplicates.ts";
 import { checkMedicineSavings } from "../lib/audit/savings.ts";
 import type { ExtractedItemRow, InsurancePolicyRow, ReferenceItemRow } from "../lib/audit/types.ts";
+import type { FindingLineage } from "../lib/audit/lineage.ts";
 import { computeEstimateComparison } from "../lib/insurance/compare.ts";
 import { resolveMedicineIdentity } from "../lib/medicines/match.ts";
 import { normalizeMedicineIdentity } from "../lib/medicines/normalize.ts";
@@ -80,6 +81,16 @@ function observation(overrides: Partial<MedicinePriceObservation> = {}): Medicin
   };
 }
 
+function assertLineage(finding: { evidence: Record<string, unknown> }, label: string): FindingLineage {
+  const lineage = finding.evidence.lineage as FindingLineage | undefined;
+  assert.ok(lineage, `${label}: missing evidence.lineage`);
+  assert.ok(lineage.source.document_ids.length > 0, `${label}: missing source document`);
+  assert.ok(lineage.source.refs.length > 0, `${label}: missing source reference`);
+  assert.ok(lineage.rule.id.length > 0, `${label}: missing rule id`);
+  assert.equal(lineage.rule.version, "1", `${label}: unexpected rule version`);
+  return lineage;
+}
+
 test("medicine fixture corpus resolves 20 known bill, estimate, and prescription cases", () => {
   assert.equal(medicineEvaluationFixtures.length, 20);
 
@@ -128,12 +139,26 @@ test("audit fixture produces known findings across pricing, quantity, duplicates
   const packageItem = item({ id: "package", item_type: "procedure", name: "Appendectomy laparoscopic", normalized_name: "appendectomy laparoscopic", total_price: 50000 });
   const overlapItem = item({ id: "overlap", item_type: "charge", name: "Anesthesia charge", normalized_name: "anesthesia charge", total_price: 5000 });
   const unexplained = item({ id: "unexplained", item_type: "charge", name: "Miscellaneous charges", normalized_name: "miscellaneous charges", total_price: 1000 });
+  const unitUnknown = item({ id: "unit-unknown", item_type: "test", name: "CBC", normalized_name: "cbc test", raw_text: "CBC 1 150" });
 
-  assert.deepEqual(checkPrices([cbc], [reference()]).map((finding) => finding.finding_type), ["price"]);
-  assert.deepEqual(checkDuplicates([duplicateA, duplicateB]).map((finding) => finding.finding_type), ["duplicate"]);
-  assert.deepEqual(checkQuantities([highQuantity]).map((finding) => finding.finding_type), ["quantity"]);
-  assert.deepEqual(checkPackageOverlap([packageItem, overlapItem]).map((finding) => finding.finding_type), ["package_overlap"]);
-  assert.deepEqual(checkUnexplained([unexplained]).map((finding) => finding.finding_type), ["unexplained"]);
+  const priceFindings = checkPrices([cbc], [reference()]);
+  const duplicateFindings = checkDuplicates([duplicateA, duplicateB]);
+  const quantityFindings = checkQuantities([highQuantity]);
+  const overlapFindings = checkPackageOverlap([packageItem, overlapItem]);
+  const unexplainedFindings = checkUnexplained([unexplained]);
+  assert.deepEqual(priceFindings.map((finding) => finding.finding_type), ["price"]);
+  assert.deepEqual(duplicateFindings.map((finding) => finding.finding_type), ["duplicate"]);
+  assert.deepEqual(quantityFindings.map((finding) => finding.finding_type), ["quantity"]);
+  assert.deepEqual(overlapFindings.map((finding) => finding.finding_type), ["package_overlap"]);
+  assert.deepEqual(unexplainedFindings.map((finding) => finding.finding_type), ["unexplained"]);
+  assertLineage(priceFindings[0], "price");
+  assertLineage(duplicateFindings[0], "duplicate");
+  assertLineage(quantityFindings[0], "quantity");
+  assertLineage(overlapFindings[0], "package overlap");
+  assertLineage(unexplainedFindings[0], "unexplained");
+  const unitFindings = checkPrices([unitUnknown], [reference()]);
+  assert.equal(unitFindings[0].finding_type, "unit_unverified");
+  assert.equal(assertLineage(unitFindings[0], "unit unverified").reference.reference_item_id, "reference");
 });
 
 test("medicine price fixture only calculates savings for a resolved, compatible NPPA unit", () => {
@@ -162,6 +187,10 @@ test("medicine price fixture only calculates savings for a resolved, compatible 
   assert.equal(findings.length, 1);
   assert.equal(findings[0].finding_type, "medicine_savings");
   assert.equal(findings[0].evidence.potential_price_difference, 416.12);
+  const medicineLineage = assertLineage(findings[0], "medicine savings");
+  assert.equal(medicineLineage.normalized.canonical_entity_id, "ceftriaxone-1g-injection");
+  assert.equal(medicineLineage.reference.observation_id, "observation");
+  assert.equal(medicineLineage.calculation?.output, 416.12);
 
   const unspecified = {
     ...medicine,
@@ -173,12 +202,15 @@ test("medicine price fixture only calculates savings for a resolved, compatible 
   const unsafeFindings = checkMedicinePriceObservations([unspecified], new Map([[unspecified.id, resolution]]), [observation()]);
   assert.equal(unsafeFindings[0].finding_type, "unit_unverified");
   assert.equal(unsafeFindings[0].evidence.potential_price_difference, undefined);
+  assert.equal(assertLineage(unsafeFindings[0], "unit unverified").reference.observation_id, "observation");
 });
 
 test("legacy reference and policy fixtures preserve fail-closed behavior", () => {
   const legacyMedicine = item({ id: "legacy", unit_price: 5, raw_text: "Paracetamol 500 mg tablet" });
   const legacyReference = reference({ category: "medicine", normalized_name: "paracetamol 500 mg tablet", name: "Paracetamol 500 mg tablet", reference_price: 1, unit: "1 tablet" });
-  assert.equal(checkMedicineSavings([legacyMedicine], [legacyReference])[0].finding_type, "medicine_savings");
+  const legacyFindings = checkMedicineSavings([legacyMedicine], [legacyReference]);
+  assert.equal(legacyFindings[0].finding_type, "medicine_savings");
+  assert.equal(assertLineage(legacyFindings[0], "legacy medicine savings").reference.reference_item_id, "reference");
 
   const policy: InsurancePolicyRow = {
     id: "policy",
@@ -193,10 +225,22 @@ test("legacy reference and policy fixtures preserve fail-closed behavior", () =>
     exclusions: [],
     consumables_covered: false,
     other_conditions: [],
+    extraction_provenance: {
+      room_rent_limit: { values: [{ value: 5000, page: 2, section: "Section 4", chunk_index: 0 }], status: "confirmed" },
+      icu_limit: { values: [{ value: 10000, page: 2, section: "Section 4", chunk_index: 0 }], status: "confirmed" },
+      copay_percent: { values: [{ value: 10, page: 3, section: "Section 5", chunk_index: 1 }], status: "confirmed" },
+      deductible: { values: [{ value: 10000, page: 3, section: "Section 5", chunk_index: 1 }], status: "confirmed" },
+      consumables_covered: { values: [{ value: false, page: 4, section: "Section 6", chunk_index: 2 }], status: "confirmed" },
+      sub_limits: { values: [{ value: { category: "Cataract", limit_amount: 30000, limit_percent: null }, page: 5, section: "Section 7", chunk_index: 3 }], status: "confirmed" },
+      waiting_periods: { values: [{ value: { condition: "Pre-existing disease", duration: "24 months" }, page: 6, section: "Section 8", chunk_index: 4 }], status: "confirmed" },
+    },
   };
   const coverageFindings = checkInsuranceCoverage([policy]);
   assert.equal(coverageFindings.length, 7);
   assert.ok(coverageFindings.every((finding) => finding.finding_type === "coverage_gap"));
+  for (const finding of coverageFindings) assertLineage(finding, finding.title);
+  assert.equal((coverageFindings[0].evidence.lineage as FindingLineage).extracted.field, "room_rent_limit");
+  assert.equal((coverageFindings[0].evidence.lineage as FindingLineage).source.refs[0].chunk_index, 0);
 });
 
 test("policy retrieval and calculation fixtures preserve source context and deterministic arithmetic", async () => {
@@ -220,6 +264,7 @@ test("policy retrieval and calculation fixtures preserve source context and dete
     exclusions: [],
     consumables_covered: null,
     other_conditions: [],
+    extraction_provenance: null,
   };
   assert.deepEqual(computeDerivedPolicyFacts(policy), [{ label: "Cataract sub-limit", amount: 10000, formula: "2% of sum insured (₹500000)" }]);
 

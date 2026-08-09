@@ -1,4 +1,5 @@
 import type { ExtractedItemRow, Finding } from "./types";
+import { itemLineage, withLineage } from "./lineage.ts";
 
 // Rough noise filters, not clinical thresholds — we have no authoritative
 // standard-quantity dataset, so this only decides what's worth asking
@@ -42,12 +43,19 @@ export function checkQuantities(items: ExtractedItemRow[]): Finding[] {
         `Billed quantity is ${item.quantity}, which is higher than typical for this item. ` +
         `We don't have an authoritative standard quantity to verify this against — worth asking ` +
         `the hospital why this quantity was needed.`,
-      evidence: {
+      evidence: withLineage({
         item: item.name,
         quantity: item.quantity,
         page: item.source_page,
         original_text: item.raw_text,
-      },
+      }, itemLineage(item, "audit.quantity.threshold", {
+        field: "quantity",
+        calculation: {
+          formula: "quantity > configured unit threshold",
+          inputs: { quantity: item.quantity, threshold },
+          output: item.quantity,
+        },
+      })),
       confidence: "low",
       related_item_id: item.id,
     });

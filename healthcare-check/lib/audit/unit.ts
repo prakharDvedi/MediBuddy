@@ -1,4 +1,5 @@
 import type { ExtractedItemRow, ReferenceItemRow } from "./types";
+import { itemLineage, withLineage } from "./lineage.ts";
 
 export type UnitVerification = {
   compatible: boolean;
@@ -74,14 +75,17 @@ export function unitUnverifiedFinding(item: ExtractedItemRow, reference: Referen
       `${reference.source_name}). ` +
       `No price-overcharge comparison was made. This is worth checking with the hospital or ` +
       `pharmacist, including whether the line is per tablet, vial, ml, pack, or another unit.`,
-    evidence: {
+    evidence: withLineage({
       item: item.name,
       reference_unit: reference.unit,
       source: reference.source_name,
       source_url: reference.source_url,
       page: item.source_page,
       original_text: item.raw_text,
-    },
+    }, itemLineage(item, "audit.reference.unit-compatibility", {
+      field: "unit_price",
+      referenceItemId: reference.id,
+    })),
     confidence: "low" as const,
     related_item_id: item.id,
   };

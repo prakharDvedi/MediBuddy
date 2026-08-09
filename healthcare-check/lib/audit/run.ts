@@ -67,7 +67,7 @@ export async function runAuditEngine(
   const { data: policies, error: policiesError } = await supabase
     .from("insurance_policies")
     .select(
-      "id, document_id, sum_insured, room_rent_limit, icu_limit, copay_percent, deductible, waiting_periods, sub_limits, exclusions, consumables_covered, other_conditions",
+      "id, document_id, sum_insured, room_rent_limit, icu_limit, copay_percent, deductible, waiting_periods, sub_limits, exclusions, consumables_covered, other_conditions, extraction_provenance",
     )
     .in("document_id", documentIds);
   if (policiesError) throw new Error(policiesError.message);

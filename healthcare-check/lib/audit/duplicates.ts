@@ -1,4 +1,5 @@
 import type { ExtractedItemRow, Finding } from "./types";
+import { itemsLineage, withLineage } from "./lineage.ts";
 
 /**
  * Groups items by normalized name across every document in the case and
@@ -33,7 +34,7 @@ export function checkDuplicates(items: ExtractedItemRow[]): Finding[] {
         `"${group[0].name}" appears ${group.length} times` +
         (pages.length > 0 ? ` (pages: ${pages.join(", ")})` : "") +
         `. Worth confirming this isn't billed more than once for the same charge.`,
-      evidence: {
+      evidence: withLineage({
         item: group[0].name,
         occurrences: group.map((i) => ({
           document_id: i.document_id,
@@ -42,7 +43,9 @@ export function checkDuplicates(items: ExtractedItemRow[]): Finding[] {
           total_price: i.total_price,
           original_text: i.raw_text,
         })),
-      },
+      }, itemsLineage(group, "audit.duplicate.normalized-item", {
+        field: "normalized_name",
+      })),
       confidence: group.every((i) => i.confidence === "high") ? "high" : "medium",
       related_item_id: group[0].id,
     });
