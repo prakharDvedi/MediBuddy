@@ -27,7 +27,7 @@ export function CaseSummary({
       {potentialSavings > 0 && (
         <p className="mt-3 border-t border-black/5 dark:border-white/10 pt-3 text-sm">
           <span className="font-medium text-black dark:text-zinc-50">
-            Potential savings: ₹{potentialSavings.toLocaleString("en-IN")}
+            Potential savings to investigate: ₹{potentialSavings.toLocaleString("en-IN")}
           </span>
         </p>
       )}

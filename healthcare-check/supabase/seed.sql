@@ -1,4 +1,6 @@
--- Demo-curated reference dataset for Healthcare Check MVP.
+-- Legacy demo-curated reference dataset for Healthcare Check MVP.
+-- The approved real NPPA/NLEM subset is maintained separately in
+-- supabase/seed/nppa_reference_items.sql so it is easy to review and apply.
 --
 -- These prices are ILLUSTRATIVE, hand-curated approximations for demo
 -- purposes (informed by typical NPPA ceiling prices / generic market

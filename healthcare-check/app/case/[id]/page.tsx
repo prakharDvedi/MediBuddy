@@ -103,10 +103,9 @@ export default async function CasePage({
   const potentialSavings = (findings ?? [])
     .filter((f) => f.finding_type === "medicine_savings")
     .reduce((sum, f) => {
-      const evidence = f.evidence as { potential_savings?: number } | null;
-      return sum + (evidence?.potential_savings ?? 0);
+      const evidence = f.evidence as { potential_savings?: unknown } | null;
+      return sum + (typeof evidence?.potential_savings === "number" ? evidence.potential_savings : 0);
     }, 0);
-
   const generalQuestions = (questions ?? []).filter((q) => !q.finding_id);
   const questionsByFinding = new Map<string, NonNullable<typeof questions>>();
   for (const q of questions ?? []) {
