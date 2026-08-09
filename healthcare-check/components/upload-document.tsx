@@ -13,7 +13,9 @@ const DOC_TYPES = [
   { value: "quotation", label: "Procedure quotation" },
   { value: "policy", label: "Insurance policy" },
   { value: "approval", label: "Insurance approval" },
-];
+] as const;
+
+type UploadDocumentType = (typeof DOC_TYPES)[number]["value"];
 
 const STAGE_LABELS = ["Uploading", "Extracting", "Understanding"];
 
@@ -23,10 +25,17 @@ type UploadDocumentProps = {
   // however many things race to call it) and returns its id.
   caseId: string | null;
   ensureCase?: () => Promise<string>;
+  initialDocType?: UploadDocumentType;
+  helperText?: string;
 };
 
-export function UploadDocument({ caseId, ensureCase }: UploadDocumentProps) {
-  const [docType, setDocType] = useState("unknown");
+export function UploadDocument({
+  caseId,
+  ensureCase,
+  initialDocType = "unknown",
+  helperText,
+}: UploadDocumentProps) {
+  const [docType, setDocType] = useState<UploadDocumentType>(initialDocType);
   // -1 = idle, 0-2 = that stage active, 3 = all done
   const [stage, setStage] = useState(-1);
   const [errorStage, setErrorStage] = useState<number | null>(null);
@@ -121,10 +130,11 @@ export function UploadDocument({ caseId, ensureCase }: UploadDocumentProps) {
 
   return (
     <div className="rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-white/[.02] p-4">
+      {helperText && <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">{helperText}</p>}
       <div className="flex flex-wrap items-center gap-3">
         <select
           value={docType}
-          onChange={(e) => setDocType(e.target.value)}
+          onChange={(e) => setDocType(e.target.value as UploadDocumentType)}
           disabled={busy}
           className="rounded border border-black/15 dark:border-white/15 bg-transparent px-2 py-1.5 text-sm disabled:opacity-50"
         >

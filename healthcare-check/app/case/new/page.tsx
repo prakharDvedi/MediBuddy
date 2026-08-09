@@ -1,16 +1,24 @@
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/logout-button";
 import { NewCaseShell } from "@/components/new-case-shell";
+import { parseCaseIntent } from "@/lib/cases/intents";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
-export default async function NewCasePage() {
+export default async function NewCasePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ intent?: string | string[] }>;
+}) {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
 
   if (!auth?.claims) {
     redirect("/login");
   }
+
+  const { intent: rawIntent } = await searchParams;
+  const intent = parseCaseIntent(rawIntent);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
@@ -24,7 +32,7 @@ export default async function NewCasePage() {
         <Link href="/dashboard" className="text-sm text-zinc-500 hover:underline">
           &larr; Back to cases
         </Link>
-        <NewCaseShell />
+        <NewCaseShell intent={intent} />
       </main>
     </div>
   );
