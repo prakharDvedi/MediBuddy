@@ -71,6 +71,7 @@ export type MedicineResolution = {
 
 export type MedicinePriceObservation = {
   id: string;
+  snapshot_id?: string | null;
   medicine_product_id: string;
   source_kind: "nppa" | "pmbi";
   source_record_id: string;
@@ -87,4 +88,11 @@ export type MedicinePriceObservation = {
   source_name: string;
   source_url: string;
   raw_source: Record<string, unknown>;
+};
+
+export type ReferenceSnapshotRow = {
+  id: string;
+  source_kind: "nppa" | "pmbi";
+  status: "staged" | "accepted" | "rejected";
+  retrieved_at: string;
 };
