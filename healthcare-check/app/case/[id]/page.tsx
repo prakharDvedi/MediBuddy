@@ -7,7 +7,7 @@ import { FindingCard } from "@/components/finding-card";
 import { ReviewWorkspaceHeader } from "@/components/run-audit-button";
 import { EditableCaseTitle } from "@/components/editable-case-title";
 import { AskPolicy } from "@/components/ask-policy";
-import { CompareEstimate } from "@/components/compare-estimate";
+import { CompareEstimate, type OtherPolicyTerm } from "@/components/compare-estimate";
 import { QuestionsChecklist, type ChecklistItem } from "@/components/questions-checklist";
 import { AppShell, BackLink } from "@/components/app-shell";
 import { EmptyState, SectionHeader, StatusBadge } from "@/components/ui";
@@ -78,6 +78,21 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   }
   const questionChecklist = Array.from(questionMap.values());
 
+  const otherPolicyTerms: OtherPolicyTerm[] = [];
+  const comparisonPolicy = policies[0];
+  if (comparisonPolicy?.room_rent_limit != null) {
+    otherPolicyTerms.push({
+      label: "Room-rent restriction",
+      description: `The policy limits room rent to ₹${comparisonPolicy.room_rent_limit.toLocaleString("en-IN")} per day. The comparison estimate shows this term separately and does not apply a proportional room-choice deduction.`,
+    });
+  }
+  if (comparisonPolicy?.consumables_covered === false) {
+    otherPolicyTerms.push({
+      label: "Consumables exclusion",
+      description: "Consumables are not covered under this policy. The comparison estimate shows this term separately and does not subtract the exclusion from the numeric result.",
+    });
+  }
+
   const statusTone = caseRow.status === "error" ? "danger" : caseRow.status === "ready" ? "success" : "info";
 
   return (
@@ -98,7 +113,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
 
             {items && items.length > 0 && <section className="mt-12" aria-labelledby="summary-heading"><SectionHeader headingId="summary-heading" eyebrow="At a glance" title="What the documents show" /><div className="mt-5"><CaseSummary totalBilled={totalBilled} findingsCount={(findings ?? []).length} highCount={highCount} mediumOrLowCount={mediumOrLowCount} potentialSavings={potentialSavings} /></div></section>}
 
-            {policies.length > 0 && <section className="mt-12" aria-labelledby="insurance-heading"><SectionHeader headingId="insurance-heading" eyebrow="Insurance" title="What your policy says" description="Important limits and conditions are shown with the language of your policy in mind." /><div className="mt-5 grid gap-4">{policies.map((policy) => <CoverageSummary key={policy.id} policy={policy} />)}<AskPolicy caseId={id} />{(items ?? []).length > 0 && <CompareEstimate caseId={id} />}</div></section>}
+            {policies.length > 0 && <section className="mt-12" aria-labelledby="insurance-heading"><SectionHeader headingId="insurance-heading" eyebrow="Insurance" title="What your policy says" description="Important limits and conditions are shown with the language of your policy in mind." /><div className="mt-5 grid gap-4">{policies.map((policy) => <CoverageSummary key={policy.id} policy={policy} />)}<AskPolicy caseId={id} />{(items ?? []).length > 0 && <CompareEstimate caseId={id} otherPolicyTerms={otherPolicyTerms} />}</div></section>}
 
             <section className="mt-12" aria-labelledby="findings-heading">
               <ReviewWorkspaceHeader caseId={id} />
