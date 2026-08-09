@@ -2,9 +2,9 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { ProcessingSteps, type StepState } from "@/components/processing-steps";
-import { ErrorState, StatusBadge } from "@/components/ui";
+import { cn, ErrorState, StatusBadge } from "@/components/ui";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useRef, useState, type DragEvent } from "react";
 
 const DOC_TYPES = [
   { value: "unknown", label: "Not sure" },
@@ -18,6 +18,7 @@ const DOC_TYPES = [
 
 type UploadDocumentType = (typeof DOC_TYPES)[number]["value"];
 const STAGE_LABELS = ["Uploading document", "Reading pages", "Understanding details"];
+const ACCEPTED_MIME_TYPES = new Set(["application/pdf", "image/jpeg", "image/png"]);
 
 type UploadDocumentProps = {
   caseId: string | null;
@@ -32,11 +33,18 @@ export function UploadDocument({ caseId, ensureCase, initialDocType = "unknown",
   const [errorStage, setErrorStage] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const busy = stage >= 0 && stage < 3;
 
   async function handleUpload(file: File) {
+    const supportedFile = ACCEPTED_MIME_TYPES.has(file.type) || /\.(pdf|jpe?g|png)$/i.test(file.name);
+    if (!supportedFile) {
+      setError("Please choose a PDF, JPG, or PNG file.");
+      setErrorStage(null);
+      return;
+    }
     if (caseId === null && !ensureCase) throw new Error("UploadDocument: ensureCase is required when caseId is null");
 
     let currentStage = 0;
@@ -91,6 +99,15 @@ export function UploadDocument({ caseId, ensureCase, initialDocType = "unknown",
     }
   }
 
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDragging(false);
+    if (busy) return;
+
+    const file = event.dataTransfer.files[0];
+    if (file) void handleUpload(file);
+  }
+
   const steps = STAGE_LABELS.map((label, i) => {
     let state: StepState = "pending";
     if (errorStage === i) state = "error";
@@ -102,7 +119,12 @@ export function UploadDocument({ caseId, ensureCase, initialDocType = "unknown",
   return (
     <div>
       {helperText && <p className="mb-5 text-sm leading-6 text-text-muted">{helperText}</p>}
-      <div className="rounded-[1rem] border border-dashed border-border-strong bg-soft-canvas/70 p-5 text-center transition-colors hover:border-info sm:p-8">
+      <div
+        onDragOver={(event) => { event.preventDefault(); setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
+        className={cn("rounded-[1rem] border border-dashed border-border-strong bg-soft-canvas/70 p-5 text-center transition-colors hover:border-info sm:p-8", isDragging && "border-info bg-info-bg/60")}
+      >
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-info-bg text-xl text-info">↑</div>
         <p className="mt-4 font-medium text-text-primary">Drop a document here or choose a file</p>
         <p className="mt-1 text-sm text-text-muted">PDF, JPG, or PNG · Your original stays private</p>

@@ -1,29 +1,13 @@
 import Link from "next/link";
 import { PublicHeader } from "@/components/app-shell";
+import { CASE_INTENT_CONFIG, type CaseIntent } from "@/lib/cases/intents";
+import { TONE_CLASSES } from "@/lib/presentation";
 
 const USE_CASES = [
-  {
-    number: "01",
-    title: "Check a hospital bill",
-    description: "See charges and medicine prices worth checking, with evidence you can take to the billing desk.",
-    href: "/signup",
-    tone: "bg-warning-bg",
-  },
-  {
-    number: "02",
-    title: "Understand your policy",
-    description: "Find limits, exclusions, waiting periods, and answers grounded in your own policy.",
-    href: "/signup",
-    tone: "bg-info-bg",
-  },
-  {
-    number: "03",
-    title: "Estimate what insurance may pay",
-    description: "See the likely patient share and why deductions may apply before you commit to care.",
-    href: "/signup",
-    tone: "bg-success-bg",
-  },
-];
+  { number: "01", intent: "bill" },
+  { number: "02", intent: "policy" },
+  { number: "03", intent: "compare" },
+] satisfies { number: string; intent: CaseIntent }[];
 
 export default function Home() {
   return (
@@ -100,16 +84,18 @@ export default function Home() {
               <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">The right review depends on what you need to know.</h2>
             </div>
             <div className="mt-7 grid gap-3 lg:grid-cols-3">
-              {USE_CASES.map((item) => (
-                <Link key={item.number} href={item.href} className={`focus-ring group rounded-[1rem] border border-border ${item.tone} p-5 transition-transform hover:-translate-y-0.5`}>
+              {USE_CASES.map((item) => {
+                const config = CASE_INTENT_CONFIG[item.intent];
+                return <Link key={item.number} href="/signup" className={`focus-ring group rounded-[1rem] border p-5 transition-transform hover:-translate-y-0.5 ${TONE_CLASSES[config.tone]}`}>
                   <div className="flex items-start justify-between gap-4">
                     <span className="text-xs font-semibold tracking-[0.12em] text-text-muted">{item.number}</span>
                     <span className="text-lg text-text-muted transition-transform group-hover:translate-x-1">→</span>
                   </div>
-                  <h3 className="mt-8 text-lg font-semibold text-text-primary">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-text-muted">{item.description}</p>
-                </Link>
-              ))}
+                  <p className="mt-8 text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">{config.eyebrow}</p>
+                  <h3 className="mt-2 text-lg font-semibold text-text-primary">{config.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-text-muted">{config.cardDescription}</p>
+                </Link>;
+              })}
             </div>
           </div>
         </section>

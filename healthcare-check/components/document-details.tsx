@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { cn, StatusBadge } from "@/components/ui";
+import { confidenceLabel, confidenceTone } from "@/lib/presentation";
+import { formatMoney } from "@/lib/dashboard/format";
 
 type Page = { page_number: number; content: string };
 type Item = { id: string; item_type: string; name: string; normalized_name: string; quantity: number | null; unit_price: number | null; total_price: number | null; source_page: number | null; confidence: string };
 type Tab = "items" | "text";
 
-function money(n: number | null) { return n != null ? `₹${n.toLocaleString("en-IN")}` : "—"; }
+function money(n: number | null) { return n != null ? formatMoney(n) : "—"; }
 
 export function DocumentDetails({ documentId }: { documentId: string }) {
   const [open, setOpen] = useState(false);
@@ -45,7 +47,7 @@ export function DocumentDetails({ documentId }: { documentId: string }) {
 
 function ItemsTable({ items }: { items: Item[] }) {
   if (items.length === 0) return <p className="text-sm text-text-muted">No line items extracted yet.</p>;
-  return <div className="overflow-x-auto"><table className="w-full min-w-[38rem] text-xs"><thead><tr className="border-b border-border text-left text-text-muted"><th className="py-2 pr-3 font-medium">Item</th><th className="py-2 pr-3 font-medium">Type</th><th className="py-2 pr-3 text-right font-medium">Qty</th><th className="py-2 pr-3 text-right font-medium">Unit</th><th className="py-2 pr-3 text-right font-medium">Total</th><th className="py-2 pr-3 font-medium">Page</th><th className="py-2 font-medium">Match</th></tr></thead><tbody className="divide-y divide-border">{items.map((item) => <tr key={item.id}><td className="py-2 pr-3 font-medium text-text-primary">{item.name}</td><td className="py-2 pr-3 text-text-muted">{item.item_type}</td><td className="py-2 pr-3 text-right text-text-muted">{item.quantity ?? "—"}</td><td className="py-2 pr-3 text-right text-text-muted">{money(item.unit_price)}</td><td className="py-2 pr-3 text-right text-text-primary">{money(item.total_price)}</td><td className="py-2 pr-3 text-text-muted">{item.source_page ?? "—"}</td><td className="py-2"><StatusBadge tone={item.confidence === "high" ? "success" : item.confidence === "medium" ? "warning" : "neutral"}>{item.confidence === "high" ? "Verified" : item.confidence === "medium" ? "Review" : "Unclear"}</StatusBadge></td></tr>)}</tbody></table></div>;
+  return <div className="overflow-x-auto"><table className="w-full min-w-[38rem] text-xs"><thead><tr className="border-b border-border text-left text-text-muted"><th className="py-2 pr-3 font-medium">Item</th><th className="py-2 pr-3 font-medium">Type</th><th className="py-2 pr-3 text-right font-medium">Qty</th><th className="py-2 pr-3 text-right font-medium">Unit</th><th className="py-2 pr-3 text-right font-medium">Total</th><th className="py-2 pr-3 font-medium">Page</th><th className="py-2 font-medium">Match</th></tr></thead><tbody className="divide-y divide-border">{items.map((item) => <tr key={item.id}><td className="py-2 pr-3 font-medium text-text-primary">{item.name}</td><td className="py-2 pr-3 text-text-muted">{item.item_type}</td><td className="py-2 pr-3 text-right text-text-muted">{item.quantity ?? "—"}</td><td className="py-2 pr-3 text-right text-text-muted">{money(item.unit_price)}</td><td className="py-2 pr-3 text-right text-text-primary">{money(item.total_price)}</td><td className="py-2 pr-3 text-text-muted">{item.source_page ?? "—"}</td><td className="py-2"><StatusBadge tone={confidenceTone(item.confidence)}>{confidenceLabel(item.confidence)}</StatusBadge></td></tr>)}</tbody></table></div>;
 }
 
 function ExtractedText({ pages }: { pages: Page[] }) {

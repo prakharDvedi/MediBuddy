@@ -34,15 +34,16 @@ export function findingTone(type: string, confidence = "medium"): Tone {
   return confidenceTone(confidence);
 }
 
+const DOCUMENT_STATUS_LABELS: Record<string, string> = {
+  uploaded: "Uploaded",
+  processing: "Reading document",
+  extracted: "Pages read",
+  structured: "Ready to review",
+  error: "Needs attention",
+};
+
 export function documentStatusLabel(status: string) {
-  const labels: Record<string, string> = {
-    uploaded: "Uploaded",
-    processing: "Reading document",
-    extracted: "Pages read",
-    structured: "Ready to review",
-    error: "Needs attention",
-  };
-  return labels[status] ?? status;
+  return DOCUMENT_STATUS_LABELS[status] ?? status;
 }
 
 export function documentStatusTone(status: string): Tone {

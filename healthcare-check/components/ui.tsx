@@ -22,8 +22,8 @@ export function StatusBadge({ tone = "neutral", children }: { tone?: Tone; child
 
 export function SourceBadge({ children = "Source" }: { children?: ReactNode }) { return <StatusBadge tone="info">{children}</StatusBadge>; }
 
-export function SectionHeader({ eyebrow, title, description, action }: { eyebrow?: string; title: string; description?: string; action?: ReactNode }) {
-  return <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div>{eyebrow && <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">{eyebrow}</p>}<h2 className="mt-1 text-xl font-semibold tracking-tight text-text-primary sm:text-2xl">{title}</h2>{description && <p className="mt-1.5 max-w-2xl text-sm leading-6 text-text-muted">{description}</p>}</div>{action}</div>;
+export function SectionHeader({ eyebrow, title, description, action, headingId }: { eyebrow?: string; title: string; description?: string; action?: ReactNode; headingId?: string }) {
+  return <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div>{eyebrow && <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">{eyebrow}</p>}<h2 id={headingId} className="mt-1 text-xl font-semibold tracking-tight text-text-primary sm:text-2xl">{title}</h2>{description && <p className="mt-1.5 max-w-2xl text-sm leading-6 text-text-muted">{description}</p>}</div>{action}</div>;
 }
 
 export function MoneyValue({ value, size = "md", className }: { value: number; size?: "sm" | "md" | "lg"; className?: string }) {

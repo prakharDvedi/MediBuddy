@@ -79,7 +79,10 @@ function Evidence({ evidence }: { evidence: Record<string, unknown> | null }) {
 
 export function FindingCard({ finding, questions }: { finding: Finding; questions: Question[] | undefined }) {
   const tone = findingTone(finding.finding_type, finding.confidence);
-  const label = TYPE_LABELS[finding.finding_type] ?? finding.finding_type;
+  const hasPotentialSavings = typeof finding.evidence?.potential_savings === "number";
+  const label = finding.finding_type === "medicine_savings" && !hasPotentialSavings
+    ? "Potential price difference"
+    : TYPE_LABELS[finding.finding_type] ?? finding.finding_type;
 
   return (
     <FindingSurface tone={tone}>

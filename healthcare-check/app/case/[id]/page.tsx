@@ -71,7 +71,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   for (const question of questions ?? []) {
     const finding = question.finding_id ? findingById.get(question.finding_id) : null;
     const audience = finding?.finding_type === "coverage_gap" || (!finding && !hasHospitalDocument) ? "insurer" : "hospital";
-    questionMap.set(question.question_text.trim().toLowerCase(), {
+    questionMap.set(question.id, {
       id: question.id,
       question: question.question_text,
       context: finding?.title ?? "General review",
@@ -94,19 +94,20 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_19rem]">
           <div className="min-w-0">
             <section aria-labelledby="documents-heading">
-              <SectionHeader eyebrow="Documents" title="Add or review your documents" description="Upload a bill, estimate, policy, or supporting page. MediBud keeps the source close to the result." />
+              <SectionHeader headingId="documents-heading" eyebrow="Documents" title="Add or review your documents" description="Upload a bill, estimate, policy, or supporting page. MediBud keeps the source close to the result." />
               <div className="mt-5 grid gap-3"><UploadDocument caseId={id} />{documents && documents.length > 0 && documents.map((document) => <DocumentCard key={document.id} doc={document} />)}</div>
             </section>
 
-            {items && items.length > 0 && <section className="mt-12" aria-labelledby="summary-heading"><SectionHeader eyebrow="At a glance" title="What the documents show" /><div className="mt-5"><CaseSummary totalBilled={totalBilled} findingsCount={(findings ?? []).length} highCount={highCount} mediumOrLowCount={mediumOrLowCount} potentialSavings={potentialSavings} /></div></section>}
+            {items && items.length > 0 && <section className="mt-12" aria-labelledby="summary-heading"><SectionHeader headingId="summary-heading" eyebrow="At a glance" title="What the documents show" /><div className="mt-5"><CaseSummary totalBilled={totalBilled} findingsCount={(findings ?? []).length} highCount={highCount} mediumOrLowCount={mediumOrLowCount} potentialSavings={potentialSavings} /></div></section>}
 
-            {policies.length > 0 && <section className="mt-12" aria-labelledby="insurance-heading"><SectionHeader eyebrow="Insurance" title="What your policy says" description="Important limits and conditions are shown with the language of your policy in mind." /><div className="mt-5 grid gap-4">{policies.map((policy) => <CoverageSummary key={policy.id} policy={policy} />)}<AskPolicy caseId={id} />{(items ?? []).length > 0 && <CompareEstimate caseId={id} />}</div></section>}
+            {policies.length > 0 && <section className="mt-12" aria-labelledby="insurance-heading"><SectionHeader headingId="insurance-heading" eyebrow="Insurance" title="What your policy says" description="Important limits and conditions are shown with the language of your policy in mind." /><div className="mt-5 grid gap-4">{policies.map((policy) => <CoverageSummary key={policy.id} policy={policy} />)}<AskPolicy caseId={id} />{(items ?? []).length > 0 && <CompareEstimate caseId={id} />}</div></section>}
 
             <section className="mt-12" aria-labelledby="findings-heading">
               <ReviewWorkspaceHeader caseId={id} />
               <div className="mt-8">
                 <SectionHeader
                   eyebrow="Findings"
+                  headingId="findings-heading"
                   title="Findings"
                   action={<p className="text-sm font-medium text-info sm:whitespace-nowrap">{(findings ?? []).length} finding{(findings ?? []).length === 1 ? "" : "s"} · {(questions ?? []).length} question{(questions ?? []).length === 1 ? "" : "s"}</p>}
                 />

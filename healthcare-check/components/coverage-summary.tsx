@@ -1,5 +1,6 @@
-import { coverageTone } from "@/lib/presentation";
-import { StatusBadge, Surface } from "@/components/ui";
+import { coverageTone, TONE_CLASSES, type Tone } from "@/lib/presentation";
+import { cn, StatusBadge, Surface } from "@/components/ui";
+import { formatMoney } from "@/lib/dashboard/format";
 
 type Policy = {
   id: string;
@@ -14,17 +15,15 @@ type Policy = {
   consumables_covered: boolean | null;
 };
 
-function money(value: number | null) {
-  return value == null ? null : `₹${value.toLocaleString("en-IN")}`;
-}
+function money(value: number | null) { return value == null ? null : formatMoney(value); }
 
 function CoverageState({ value, trueLabel, falseLabel }: { value: boolean | null; trueLabel: string; falseLabel: string }) {
   return <StatusBadge tone={coverageTone(value)}>{value == null ? "Not clearly stated" : value ? trueLabel : falseLabel}</StatusBadge>;
 }
 
-function Limit({ label, value, suffix, tone = "info" }: { label: string; value: string | null; suffix?: string; tone?: "info" | "warning" | "neutral" }) {
+function Limit({ label, value, suffix, tone = "info" }: { label: string; value: string | null; suffix?: string; tone?: Tone }) {
   return (
-    <div className={`rounded-xl border p-4 ${tone === "info" ? "border-info/20 bg-info-bg" : tone === "warning" ? "border-warning/20 bg-warning-bg" : "border-border bg-surface"}`}>
+    <div className={cn("rounded-xl border p-4", TONE_CLASSES[tone])}>
       <p className="text-xs text-text-muted">{label}</p>
       <p className="mt-2 text-lg font-semibold text-text-primary">{value ? `${value}${suffix ?? ""}` : "Not clearly stated"}</p>
       {!value && <p className="mt-1 text-xs text-warning">Confirm with your insurer.</p>}

@@ -4,20 +4,19 @@ import {
   getCaseIntentHref,
   type CaseIntent,
 } from "@/lib/cases/intents";
+import { TONE_CLASSES } from "@/lib/presentation";
 
 export function DashboardActionCard({ intent }: { intent: CaseIntent }) {
   const config = CASE_INTENT_CONFIG[intent];
-  const tone = intent === "bill" ? "bg-warning-bg" : intent === "policy" ? "bg-info-bg" : "bg-success-bg";
-  const eyebrow = intent === "bill" ? "Hospital costs" : intent === "policy" ? "Policy clarity" : "Planning ahead";
 
   return (
     <Link
       href={getCaseIntentHref(intent)}
-      className={`focus-ring group flex h-full flex-col rounded-[1rem] border border-border ${tone} p-5 transition-transform hover:-translate-y-0.5`}
+      className={`focus-ring group flex h-full flex-col rounded-[1rem] border p-5 transition-transform hover:-translate-y-0.5 ${TONE_CLASSES[config.tone]}`}
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">{eyebrow}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">{config.eyebrow}</p>
           <h2 className="mt-2 text-lg font-semibold leading-snug text-text-primary">{config.title}</h2>
         </div>
         <span className="text-xl text-text-muted transition-transform group-hover:translate-x-1">→</span>
