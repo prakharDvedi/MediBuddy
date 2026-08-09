@@ -1,4 +1,5 @@
 import type { ExtractedItemRow, Finding } from "./types";
+import { itemLineage, withLineage } from "./lineage.ts";
 
 const UNEXPLAINED_KEYWORDS = [
   "miscellaneous",
@@ -33,12 +34,14 @@ export function checkUnexplained(items: ExtractedItemRow[]): Finding[] {
       description:
         `This charge isn't itemized in a way that says what it actually covers. ` +
         `Worth asking the hospital for a breakdown.`,
-      evidence: {
+      evidence: withLineage({
         item: item.name,
         total_price: item.total_price,
         page: item.source_page,
         original_text: item.raw_text,
-      },
+      }, itemLineage(item, "audit.unexplained-charge.keyword", {
+        field: "name",
+      })),
       confidence: "medium",
       related_item_id: item.id,
     });

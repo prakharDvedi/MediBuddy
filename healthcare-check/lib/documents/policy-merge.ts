@@ -5,6 +5,7 @@ export type PolicyProvenanceValue = {
   value: unknown;
   page: number | null;
   section: string | null;
+  chunk_index: number | null;
 };
 
 export type PolicyProvenanceEntry = {
@@ -44,8 +45,8 @@ function valueKey(value: unknown): string {
   return JSON.stringify(value);
 }
 
-function source(chunk: PolicyChunk, value: unknown): PolicyProvenanceValue {
-  return { value, page: chunk.page, section: chunk.sectionTitle };
+function source(chunk: PolicyChunk, value: unknown, chunkIndex: number): PolicyProvenanceValue {
+  return { value, page: chunk.page, section: chunk.sectionTitle, chunk_index: chunkIndex };
 }
 
 function addProvenance(
@@ -65,11 +66,11 @@ function mergeScalar(
   const values: PolicyProvenanceValue[] = [];
   const seen = new Set<string>();
 
-  for (const extraction of extractions) {
+  for (const [chunkIndex, extraction] of extractions.entries()) {
     const value = extraction.policy[field];
     if (value == null || seen.has(valueKey(value))) continue;
     seen.add(valueKey(value));
-    values.push(source(extraction.chunk, value));
+    values.push(source(extraction.chunk, value, chunkIndex));
   }
 
   addProvenance(provenance, provenanceField(field), values, values.length > 1 ? "requires_confirmation" : "confirmed");
@@ -85,7 +86,7 @@ function mergeWaitingPeriods(
   const seen = new Set<string>();
   const durationsByCondition = new Map<string, Set<string>>();
 
-  for (const extraction of extractions) {
+  for (const [chunkIndex, extraction] of extractions.entries()) {
     for (const waitingPeriod of extraction.policy.waitingPeriods) {
       const condition = waitingPeriod.condition.trim();
       const duration = waitingPeriod.duration.trim();
@@ -98,7 +99,7 @@ function mergeWaitingPeriods(
       if (seen.has(key)) continue;
       seen.add(key);
       result.push({ condition, duration });
-      values.push(source(extraction.chunk, { condition, duration }));
+      values.push(source(extraction.chunk, { condition, duration }, chunkIndex));
     }
   }
 
@@ -116,7 +117,7 @@ function mergeSubLimits(
   const seen = new Set<string>();
   const variantsByCategory = new Map<string, Set<string>>();
 
-  for (const extraction of extractions) {
+  for (const [chunkIndex, extraction] of extractions.entries()) {
     for (const subLimit of extraction.policy.subLimits) {
       const category = subLimit.category.trim();
       if (!category) continue;
@@ -134,7 +135,7 @@ function mergeSubLimits(
       if (seen.has(key)) continue;
       seen.add(key);
       result.push(value);
-      values.push(source(extraction.chunk, value));
+      values.push(source(extraction.chunk, value, chunkIndex));
     }
   }
 
@@ -152,14 +153,14 @@ function mergeTextArray(
   const values: PolicyProvenanceValue[] = [];
   const seen = new Set<string>();
 
-  for (const extraction of extractions) {
+  for (const [chunkIndex, extraction] of extractions.entries()) {
     for (const item of extraction.policy[field]) {
       const text = item.trim();
       const key = normalizeText(text);
       if (!text || seen.has(key)) continue;
       seen.add(key);
       result.push(text);
-      values.push(source(extraction.chunk, text));
+      values.push(source(extraction.chunk, text, chunkIndex));
     }
   }
 

@@ -4,6 +4,7 @@ import { RecentCases } from "@/components/recent-cases";
 import { AppShell } from "@/components/app-shell";
 import { getRecentCases } from "@/lib/dashboard/data";
 import { redirect } from "next/navigation";
+import { DemoCaseActions } from "@/components/demo-case-actions";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -42,6 +43,8 @@ export default async function DashboardPage() {
               <DashboardActionCard intent="compare" />
             </div>
           </section>
+
+          <DemoCaseActions />
 
           <RecentCases cases={cases} />
         </div>

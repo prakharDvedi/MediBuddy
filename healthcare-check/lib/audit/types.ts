@@ -29,6 +29,31 @@ export type ReferenceItemRow = {
   medicine_product_id: string | null;
 };
 
+export type CghsReferenceRecordRow = {
+  id: string;
+  snapshot_id: string;
+  source_record_id: string;
+  code: string;
+  record_kind: "procedure" | "package";
+  category: string;
+  description: string;
+  normalized_name: string;
+  rate: number;
+  rate_unit: string;
+  rate_context: string;
+  room_type: string | null;
+  inclusion_notes: string | null;
+  exclusion_notes: string | null;
+  applicability_conditions: string | null;
+  source_page: number | null;
+  source_section: string | null;
+  raw_source: Record<string, unknown>;
+  source_name?: string | null;
+  source_url?: string | null;
+  effective_date?: string | null;
+  retrieved_at?: string | null;
+};
+
 export type InsurancePolicyRow = {
   id: string;
   document_id: string;
@@ -42,7 +67,22 @@ export type InsurancePolicyRow = {
   exclusions: string[] | null;
   consumables_covered: boolean | null;
   other_conditions: string[] | null;
+  extraction_provenance: PolicyProvenance | null;
 };
+
+export type PolicyProvenanceValue = {
+  value: unknown;
+  page: number | null;
+  section: string | null;
+  chunk_index?: number | null;
+};
+
+export type PolicyProvenanceEntry = {
+  values: PolicyProvenanceValue[];
+  status: string;
+};
+
+export type PolicyProvenance = Record<string, PolicyProvenanceEntry>;
 
 export type Finding = {
   document_id: string | null;

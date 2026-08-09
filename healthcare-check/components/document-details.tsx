@@ -34,13 +34,33 @@ export function DocumentDetails({ documentId }: { documentId: string }) {
     }
   }
 
-  async function toggle() { if (!open) await load(tab); setOpen((current) => !current); }
+  async function toggle() {
+    if (loading) return;
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    setOpen(true);
+    await load(tab);
+  }
   async function switchTab(nextTab: Tab) { setTab(nextTab); await load(nextTab); }
 
   return (
-    <div className="mt-4">
-      <button type="button" onClick={() => void toggle()} className="focus-ring rounded-lg text-sm font-medium text-info underline decoration-info/40 underline-offset-4 hover:decoration-info">{open ? "Hide extracted details" : "View extracted details"}</button>
-      {open && <div className="mt-3 overflow-hidden rounded-xl border border-info/20 bg-info-bg"><div className="flex border-b border-info/20 bg-surface/70">{(["items", "text"] as const).map((nextTab) => <button type="button" key={nextTab} onClick={() => void switchTab(nextTab)} className={cn("focus-ring border-b-2 px-4 py-3 text-xs font-semibold", tab === nextTab ? "border-info text-info" : "border-transparent text-text-muted hover:text-text-primary")}>{nextTab === "items" ? "Line items" : "Extracted text"}</button>)}</div><div className="max-h-80 overflow-y-auto p-4">{loading && <p className="text-sm text-text-muted">Loading extracted details...</p>}{!loading && tab === "items" && <ItemsTable items={items ?? []} />}{!loading && tab === "text" && <ExtractedText pages={pages ?? []} />}</div></div>}
+    <div className="mt-4 -mx-4 -mb-4 border-t border-border">
+      <button
+        type="button"
+        onClick={() => void toggle()}
+        disabled={loading}
+        aria-busy={loading}
+        className={cn("focus-ring flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium transition-colors", loading ? "cursor-wait bg-info-bg/50 text-info" : "text-info hover:bg-info-bg/50")}
+      >
+        <span className="inline-flex items-center gap-2">
+          {loading && <span aria-hidden="true" className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-info/30 border-t-info" />}
+          {loading ? "Loading extracted details…" : open ? "Hide extracted details" : "View extracted details"}
+        </span>
+        {!loading && <span aria-hidden="true" className="text-base">{open ? "↑" : "↓"}</span>}
+      </button>
+      {open && <div className="overflow-hidden border-t border-info/20 bg-info-bg"><div className="flex border-b border-info/20 bg-surface/70">{(["items", "text"] as const).map((nextTab) => <button type="button" key={nextTab} onClick={() => void switchTab(nextTab)} disabled={loading} className={cn("focus-ring border-b-2 px-4 py-3 text-xs font-semibold", tab === nextTab ? "border-info text-info" : "border-transparent text-text-muted hover:text-text-primary")}>{nextTab === "items" ? "Line items" : "Extracted text"}</button>)}</div><div className="max-h-80 overflow-y-auto p-4">{loading && <p className="text-sm text-text-muted">Loading extracted details...</p>}{!loading && tab === "items" && <ItemsTable items={items ?? []} />}{!loading && tab === "text" && <ExtractedText pages={pages ?? []} />}</div></div>}
     </div>
   );
 }

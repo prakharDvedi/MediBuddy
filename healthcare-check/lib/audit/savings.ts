@@ -1,5 +1,6 @@
 import type { ExtractedItemRow, ReferenceItemRow, Finding } from "./types";
-import { unitUnverifiedFinding, verifyReferenceUnit } from "./unit";
+import { unitUnverifiedFinding, verifyReferenceUnit } from "./unit.ts";
+import { itemLineage, withLineage } from "./lineage.ts";
 
 const OVERAGE_THRESHOLD = 1.2;
 
@@ -47,7 +48,7 @@ export function checkMedicineSavings(
         `Potential price difference: ₹${potentialPriceDifference}. This is worth investigating ` +
         `with the hospital or pharmacist. Estimated from the available reference price. This does ` +
         `not guarantee that this amount is recoverable or that the hospital charge is unlawful.`,
-      evidence: {
+      evidence: withLineage({
         item: item.name,
         hospital_price: item.unit_price,
         reference_price: reference.reference_price,
@@ -58,7 +59,20 @@ export function checkMedicineSavings(
         source_url: reference.source_url,
         page: item.source_page,
         original_text: item.raw_text,
-      },
+      }, itemLineage(item, "audit.medicine.legacy-reference-overage", {
+        field: "unit_price",
+        referenceItemId: reference.id,
+        calculation: {
+          formula: "(hospital_price - reference_price) * quantity",
+          inputs: {
+            hospital_price: item.unit_price,
+            reference_price: reference.reference_price,
+            quantity,
+            threshold: OVERAGE_THRESHOLD,
+          },
+          output: potentialPriceDifference,
+        },
+      })),
       confidence: item.confidence === "low" ? "low" : "medium",
       related_item_id: item.id,
     });

@@ -7,8 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "npm run test:medicine && npm run test:policy && npm run test:evaluation && npm run test:reference && npm run test:cghs && npm run test:demo",
     "test:medicine": "node --experimental-strip-types --test tests/medicine-regression.test.ts",
-    "test:policy": "node --experimental-strip-types --test tests/policy-extraction.test.ts"
+    "test:policy": "node --experimental-strip-types --test tests/policy-extraction.test.ts",
+    "test:evaluation": "node --experimental-strip-types --test tests/evaluation.test.ts",
+    "test:reference": "node --experimental-strip-types --test tests/reference-ingestion.test.ts",
+    "test:pmbi": "node --experimental-strip-types --test tests/pmbi-reference.test.ts",
+    "test:cghs": "node --experimental-strip-types --test tests/cghs-reference.test.ts",
+    "test:demo": "node --experimental-strip-types --test tests/demo-fixtures.test.ts",
+    "generate:cghs": "node --experimental-strip-types scripts/generate-cghs-fixture.ts",
+    "ingest:reference": "node --experimental-strip-types scripts/ingest-reference.ts"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",
