@@ -31,12 +31,22 @@ function Limit({ label, value, suffix, tone = "info" }: { label: string; value: 
   );
 }
 
-function ListBlock({ label, items, tone = "neutral" }: { label: string; items: string[]; tone?: "neutral" | "warning" }) {
+function ListBlock({
+  label,
+  items,
+  tone = "neutral",
+  listClassName,
+}: {
+  label: string;
+  items: string[];
+  tone?: "neutral" | "warning";
+  listClassName?: string;
+}) {
   if (items.length === 0) return null;
   return (
     <div className={`border-t pt-5 ${tone === "warning" ? "border-danger/20" : "border-border"}`}>
       <p className={`text-xs font-semibold uppercase tracking-[0.1em] ${tone === "warning" ? "text-danger" : "text-text-muted"}`}>{label}</p>
-      <ul className="mt-3 grid gap-2">{items.map((item, i) => <li key={i} className={`rounded-xl px-3 py-2.5 text-sm leading-6 ${tone === "warning" ? "bg-danger-bg text-text-primary" : "bg-soft-canvas text-text-primary"}`}>{item}</li>)}</ul>
+      <ul className={cn("mt-3 grid gap-2", listClassName)}>{items.map((item, i) => <li key={i} className={`rounded-xl px-3 py-2.5 text-sm leading-6 ${tone === "warning" ? "bg-danger-bg text-text-primary" : "bg-soft-canvas text-text-primary"}`}>{item}</li>)}</ul>
     </div>
   );
 }
@@ -67,10 +77,10 @@ export function CoverageSummary({ policy }: { policy: Policy }) {
         <Limit label="Deductible" value={money(policy.deductible)} tone="warning" />
         <div className="rounded-xl border border-success/20 bg-success-bg p-4"><p className="text-xs text-text-muted">Consumables</p><div className="mt-2"><CoverageState value={policy.consumables_covered} trueLabel="Covered" falseLabel="Not covered" /></div></div>
       </div>
-      <div className="mt-6 grid gap-5 sm:grid-cols-2">
-        <ListBlock label="Category sub-limits" items={subLimits} />
-        <ListBlock label="Waiting periods" items={waitingPeriods} />
-        <ListBlock label="Important exclusions" items={exclusions} tone="warning" />
+      <div className="mt-6 grid gap-6">
+        <ListBlock label="Category sub-limits" items={subLimits} listClassName="sm:grid-cols-3" />
+        <ListBlock label="Waiting periods" items={waitingPeriods} listClassName="sm:grid-cols-2" />
+        <ListBlock label="Important exclusions" items={exclusions} tone="warning" listClassName="sm:grid-cols-2" />
       </div>
     </Surface>
   );

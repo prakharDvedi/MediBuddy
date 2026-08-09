@@ -17,7 +17,8 @@ const DOC_TYPES = [
 ] as const;
 
 type UploadDocumentType = (typeof DOC_TYPES)[number]["value"];
-const STAGE_LABELS = ["Uploading document", "Reading pages", "Understanding details"];
+const STANDARD_STAGE_LABELS = ["Uploading document", "Reading pages", "Understanding details"];
+const POLICY_STAGE_LABELS = ["Uploading document", "Reading pages", "Understanding policy", "Preparing summary"];
 const ACCEPTED_MIME_TYPES = new Set(["application/pdf", "image/jpeg", "image/png"]);
 
 type UploadDocumentProps = {
@@ -36,7 +37,9 @@ export function UploadDocument({ caseId, ensureCase, initialDocType = "unknown",
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  const busy = stage >= 0 && stage < 3;
+  const stageLabels = docType === "policy" ? POLICY_STAGE_LABELS : STANDARD_STAGE_LABELS;
+  const completionStage = stageLabels.length;
+  const busy = stage >= 0 && stage < completionStage;
 
   async function handleUpload(file: File) {
     const supportedFile = ACCEPTED_MIME_TYPES.has(file.type) || /\.(pdf|jpe?g|png)$/i.test(file.name);
@@ -75,20 +78,30 @@ export function UploadDocument({ caseId, ensureCase, initialDocType = "unknown",
 
       currentStage = 2;
       setStage(currentStage);
-      const structureRes = await fetch(`/api/documents/${created.documentId}/structure`, { method: "POST" });
-      const structured = await structureRes.json();
-      if (!structureRes.ok) throw new Error(structured.error ?? "Could not understand this document");
-
-      if (structured.docType === "policy") {
+      if (docType === "policy") {
+        currentStage = 3;
+        setStage(currentStage);
         const policyRes = await fetch(`/api/documents/${created.documentId}/policy`, { method: "POST" });
         const policy = await policyRes.json();
         if (!policyRes.ok) throw new Error(policy.error ?? "Could not prepare the policy summary");
-        setSummary(`Read ${extracted.pageCount} page(s) and prepared the coverage details.`);
+        const chunkCount = typeof policy.chunkCount === "number" ? policy.chunkCount : 0;
+        setSummary(`Read ${extracted.pageCount} page(s) and prepared ${chunkCount} policy section(s).`);
       } else {
-        setSummary(`Read ${extracted.pageCount} page(s) and found ${structured.itemCount} line item(s).`);
+        const structureRes = await fetch(`/api/documents/${created.documentId}/structure`, { method: "POST" });
+        const structured = await structureRes.json();
+        if (!structureRes.ok) throw new Error(structured.error ?? "Could not understand this document");
+
+        if (structured.docType === "policy") {
+          const policyRes = await fetch(`/api/documents/${created.documentId}/policy`, { method: "POST" });
+          const policy = await policyRes.json();
+          if (!policyRes.ok) throw new Error(policy.error ?? "Could not prepare the policy summary");
+          setSummary(`Read ${extracted.pageCount} page(s) and prepared the coverage details.`);
+        } else {
+          setSummary(`Read ${extracted.pageCount} page(s) and found ${structured.itemCount} line item(s).`);
+        }
       }
 
-      setStage(3);
+      setStage(completionStage);
       if (caseId === null) router.push(`/case/${resolvedCaseId}`);
       else router.refresh();
     } catch (err) {
@@ -108,10 +121,10 @@ export function UploadDocument({ caseId, ensureCase, initialDocType = "unknown",
     if (file) void handleUpload(file);
   }
 
-  const steps = STAGE_LABELS.map((label, i) => {
+  const steps = stageLabels.map((label, i) => {
     let state: StepState = "pending";
     if (errorStage === i) state = "error";
-    else if (stage > i || stage === 3) state = "done";
+    else if (stage > i || stage === completionStage) state = "done";
     else if (stage === i) state = "active";
     return { label, state };
   });
@@ -139,7 +152,7 @@ export function UploadDocument({ caseId, ensureCase, initialDocType = "unknown",
           </select>
         </div>
       </div>
-      {stage >= 0 && <div className="mt-5 rounded-[1rem] border border-info/20 bg-info-bg/70 p-5"><div className="flex items-center justify-between gap-3"><p className="text-sm font-semibold text-text-primary">Preparing your review</p><StatusBadge tone={error ? "danger" : stage === 3 ? "success" : "info"}>{error ? "Needs attention" : stage === 3 ? "Ready" : "In progress"}</StatusBadge></div><div className="mt-4"><ProcessingSteps steps={steps} /></div></div>}
+      {stage >= 0 && <div className="mt-5 rounded-[1rem] border border-info/20 bg-info-bg/70 p-5"><div className="flex items-center justify-between gap-3"><p className="text-sm font-semibold text-text-primary">Preparing your review</p><StatusBadge tone={error ? "danger" : stage === completionStage ? "success" : "info"}>{error ? "Needs attention" : stage === completionStage ? "Ready" : "In progress"}</StatusBadge></div><div className="mt-4"><ProcessingSteps steps={steps} /></div></div>}
       {summary && <p className="mt-3 text-sm font-medium text-success">{summary}</p>}
       {error && <div className="mt-3"><ErrorState message={error} /></div>}
     </div>
