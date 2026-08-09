@@ -21,12 +21,14 @@ export function DocumentCard({ doc }: { doc: Document }) {
 
   return (
     <div className="surface p-4">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-info-bg text-sm font-semibold text-info">▤</div>
           <div className="min-w-0"><p className="truncate text-sm font-semibold text-text-primary">{doc.original_filename}</p><p className="mt-1 text-xs text-text-muted">{doc.doc_type ?? "Document type not confirmed"} · {doc.page_count ?? 0} page(s)</p></div>
         </div>
-        <StatusBadge tone={documentStatusTone(doc.status)}>{documentStatusLabel(doc.status)}</StatusBadge>
+        <div className="shrink-0 whitespace-nowrap">
+          <StatusBadge tone={documentStatusTone(doc.status)}>{documentStatusLabel(doc.status)}</StatusBadge>
+        </div>
       </div>
       {isSyntheticDemo && <p className="mt-3 rounded-lg border border-warning/25 bg-warning-bg px-3 py-2 text-xs font-medium leading-5 text-warning">{demoLabel}</p>}
       <DocumentDetails documentId={doc.id} />

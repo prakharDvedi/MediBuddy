@@ -42,12 +42,12 @@ export default function Home() {
           <div className="relative min-w-0 lg:pl-4">
             <div className="absolute -inset-5 rounded-[2rem] bg-info-bg/50 blur-2xl" />
             <div className="relative rounded-[1.25rem] border border-border bg-surface-elevated p-4 shadow-[0_24px_70px_rgb(23_43_58_/_0.12)] sm:p-6">
-              <div className="flex items-center justify-between border-b border-border pb-4">
+              <div className="flex flex-col items-start gap-2 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">Example review</p>
                   <p className="mt-1 font-semibold text-text-primary">Surgery estimate</p>
                 </div>
-                <span className="rounded-full bg-warning-bg px-2.5 py-1 text-xs font-medium text-warning">Worth investigating</span>
+                <span className="shrink-0 whitespace-nowrap rounded-full bg-warning-bg px-2.5 py-1 text-center text-xs font-medium text-warning">Worth investigating</span>
               </div>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl bg-soft-canvas p-4">
