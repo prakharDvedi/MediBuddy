@@ -28,9 +28,12 @@ export type PmbiSourceRow = {
   productId: string;
   drugCode?: string | null;
   genericName: string;
+  identityName?: string | null;
   unitSize: string;
   mrp: number;
   groupName?: string | null;
+  sourcePage?: number | null;
+  sourceSection?: string | null;
 };
 
 export type PreparedMedicineObservation = {
@@ -146,12 +149,24 @@ function nppaUnit(value: string): UnitInfo | null {
 }
 
 function pmbiUnit(value: string): UnitInfo | null {
-  const normalized = value.trim();
-  const packMatch = normalized.match(/^(\d+)'s$/i);
+  const normalized = value.trim().replace(/\s+/g, " ").replace(/\.$/, "");
+  const packMatch = normalized.match(/^(\d+)\s*(?:'s|s)$/i);
   if (packMatch) return { saleUnit: "pack", packQuantity: Number(packMatch[1]), packUnit: "tablet_or_capsule" };
-  if (normalized.toLowerCase() === "vial") return { saleUnit: "pack", packQuantity: 1, packUnit: "vial" };
-  if (normalized.toLowerCase() === "vial & wfi") return { saleUnit: "pack", packQuantity: 1, packUnit: "vial_with_wfi" };
+  if (/^(?:vial|wfi)$/i.test(normalized)) return { saleUnit: "pack", packQuantity: 1, packUnit: "vial" };
+  if (/^vial\s*(?:&|and|with)?\s*wfi$/i.test(normalized)) return { saleUnit: "pack", packQuantity: 1, packUnit: "vial_with_wfi" };
+  const measuredPack = normalized.match(/^(\d+(?:\.\d+)?)\s*(ml|g|gm|gms)(?:\s+(?:bottle|bottles|tube|tubes|vial))?$/i);
+  if (measuredPack) {
+    const unit = measuredPack[2].toLowerCase().startsWith("g") ? "g" : "ml";
+    return { saleUnit: "pack", packQuantity: Number(measuredPack[1]), packUnit: unit };
+  }
   return null;
+}
+
+function pmbiCanonicalName(genericName: string, unitSize: string, identityName?: string | null): string {
+  const name = (identityName ?? genericName).trim();
+  const unit = unitSize.trim();
+  if (unit && name.toLowerCase().endsWith(unit.toLowerCase())) return name.slice(0, -unit.length).trim().replace(/[,.]+$/, "");
+  return name;
 }
 
 export function adaptNppaRows(rows: NppaSourceRow[], metadata: SourceMetadata): AdaptedSnapshot {
@@ -213,7 +228,7 @@ export function adaptPmbiRows(rows: PmbiSourceRow[], metadata: SourceMetadata): 
   rows.forEach((row, index) => {
     const rowNumber = index + 1;
     const unit = pmbiUnit(row.unitSize ?? "");
-    const canonicalName = row.genericName?.trim() ?? "";
+    const canonicalName = pmbiCanonicalName(row.genericName ?? "", row.unitSize ?? "", row.identityName);
     const sourceRecordId = row.productId?.trim() ? `product_id:${row.productId.trim()}` : "";
     if (!sourceRecordId) issues.push({ row: rowNumber, field: "productId", message: "PMBI product ID is required." });
     if (!canonicalName) issues.push({ row: rowNumber, field: "genericName", message: "Generic name is required." });

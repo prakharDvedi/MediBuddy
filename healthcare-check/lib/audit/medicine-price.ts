@@ -24,9 +24,9 @@ function itemText(item: ExtractedItemRow): string {
 }
 
 function packFromText(text: string): { quantity: number; unit: string } | null {
-  const explicit = text.match(/\b(?:pack|strip|box)\s*(?:of\s*)?(\d+)\s*(tablet|tablets|capsule|capsules|vial|vials|ml)\b/i);
+  const explicit = text.match(/\b(?:pack|strip|box)\s*(?:of\s*)?(\d+(?:\.\d+)?)\s*(tablet|tablets|capsule|capsules|vial|vials|ml|g|gm|gms)\b/i);
   if (explicit) return { quantity: Number(explicit[1]), unit: explicit[2].replace(/s$/, "").toLowerCase() };
-  const count = text.match(/\b(\d+)\s*(tablet|tablets|capsule|capsules|vial|vials)\b/i);
+  const count = text.match(/\b(\d+(?:\.\d+)?)\s*(tablet|tablets|capsule|capsules|vial|vials|ml|g|gm|gms)\b/i);
   if (count && Number(count[1]) > 1) return { quantity: Number(count[1]), unit: count[2].replace(/s$/, "").toLowerCase() };
   return null;
 }

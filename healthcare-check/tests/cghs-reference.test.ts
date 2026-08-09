@@ -70,12 +70,29 @@ test("CGHS adapter preserves codes, package semantics, normalization, and source
   const adapted = adaptCghsRows(cghsSlice, cghsMetadata);
   assert.deepEqual(adapted.issues, []);
   assert.equal(adapted.rows.length, cghsSlice.length);
+  assert.ok(adapted.rows.length >= 100 && adapted.rows.length <= 200);
   assert.equal(adapted.rows[0].code, "CN001");
   assert.equal(adapted.rows[0].normalized_name, "consultation opd");
   assert.equal(adapted.rows.at(-1)?.record_kind, "package");
   assert.equal(adapted.rows.at(-1)?.inclusion_notes, "Source description states including all Consumables.");
   assert.equal(adapted.rows.at(-1)?.source_page, 108);
   assert.equal(adapted.rows.at(-1)?.effective_date, "2025-10-13");
+});
+
+test("expanded CGHS slice covers specialties, rate contexts, and exact official values", () => {
+  const adapted = adaptCghsRows(cghsSlice, cghsMetadata);
+  const categories = new Set(adapted.rows.map((row) => row.category));
+  const contexts = new Set(adapted.rows.map((row) => row.rate_context));
+  const bp027 = adapted.rows.filter((row) => row.code === "BP027");
+
+  assert.ok(categories.size >= 15);
+  assert.ok(contexts.has("uniform"));
+  assert.ok(contexts.has("semi_private_tier_i_non_nabh"));
+  assert.ok(contexts.has("semi_private_tier_i_nabh"));
+  assert.ok(contexts.has("semi_private_tier_i_super_speciality"));
+  assert.deepEqual(bp027.map((row) => row.rate), [23375, 27500, 31625]);
+  assert.equal(adapted.rows.filter((row) => row.code === "BP040").length, 3);
+  assert.ok(adapted.rows.filter((row) => row.code === "BP040").every((row) => row.inclusion_notes?.includes("including all Consumables")));
 });
 
 test("CGHS validation rejects missing context, invalid rates, duplicate IDs, and bad dates", () => {
@@ -125,6 +142,7 @@ test("CGHS audit compares uniform context only and preserves evidence lineage", 
   const contextualOnly = records().filter((record) => record.code === "BP027");
   assert.equal(checkCghsPrices([item({ name: "Plastic Surgery of the Nose - Minor", normalized_name: "plastic surgery of the nose - minor", unit_price: 50000 })], contextualOnly).length, 0);
   assert.equal(checkCghsPrices([item({ item_type: "service" })], records()).length, 1);
+  assert.equal(checkCghsPrices([item({ name: "Consultation Outpatient", normalized_name: "consultation outpatient" })], records()).length, 0);
 });
 
 test("CGHS findings stay out of the potential-savings summary", () => {
