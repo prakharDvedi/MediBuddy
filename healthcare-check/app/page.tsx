@@ -85,9 +85,10 @@ export default function Home() {
         </div>
 
         <p className="mt-16 border-t border-black/5 dark:border-white/10 pt-6 text-xs text-zinc-500">
-          Reference prices are hand-curated demo data, not a live authoritative feed — every
-          flagged charge tells you where the comparison came from, and nothing here replaces
-          confirming directly with your hospital or insurer.
+          Medicine comparisons use NPPA ceiling prices where a matching scheduled formulation and
+          unit can be verified. These are legal maximum ex-manufacturer prices excluding GST — not
+          hospital billing caps or market prices. Other reference rows may be illustrative; every
+          flagged item is worth checking directly with your hospital, pharmacist, or insurer.
         </p>
       </main>
     </div>

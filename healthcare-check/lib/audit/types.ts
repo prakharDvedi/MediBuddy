@@ -47,7 +47,8 @@ export type Finding = {
     | "package_overlap"
     | "unexplained"
     | "medicine_savings"
-    | "coverage_gap";
+    | "coverage_gap"
+    | "unit_unverified";
   title: string;
   description: string;
   evidence: Record<string, unknown>;

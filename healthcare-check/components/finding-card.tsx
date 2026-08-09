@@ -16,6 +16,7 @@ const TYPE_LABELS: Record<string, string> = {
   package_overlap: "Package overlap",
   unexplained: "Unexplained charge",
   medicine_savings: "Potential savings",
+  unit_unverified: "Unit not verified",
   coverage_gap: "Coverage term",
 };
 
@@ -79,6 +80,9 @@ function Evidence({ evidence }: { evidence: Record<string, unknown> | null }) {
   const hasPriceComparison =
     typeof hospitalPrice === "number" && typeof referencePrice === "number";
   const source = typeof evidence.source === "string" ? evidence.source : null;
+  const referenceUnit = typeof evidence.reference_unit === "string" ? evidence.reference_unit : null;
+  const potentialSavings =
+    typeof evidence.potential_savings === "number" ? evidence.potential_savings : null;
 
   const occurrences = Array.isArray(evidence.occurrences)
     ? (evidence.occurrences as {
@@ -112,18 +116,24 @@ function Evidence({ evidence }: { evidence: Record<string, unknown> | null }) {
   return (
     <div className="mt-3 flex flex-col gap-2">
       {hasPriceComparison && (
-        <div className="flex flex-wrap items-baseline gap-x-2 text-sm">
+        <div className="flex flex-col gap-0.5 text-sm">
           <span className="font-medium text-zinc-900 dark:text-zinc-100">
-            Billed ₹{(hospitalPrice as number).toLocaleString("en-IN")}
+            Hospital price: ₹{(hospitalPrice as number).toLocaleString("en-IN")}
           </span>
-          <span className="text-zinc-400">vs.</span>
           <span className="text-zinc-600 dark:text-zinc-400">
-            reference ₹{(referencePrice as number).toLocaleString("en-IN")}
-            {source ? ` (${source})` : ""}
+            {source?.startsWith("NPPA ceiling price") ? "NPPA reference" : "Reference"}: ₹
+            {(referencePrice as number).toLocaleString("en-IN")}
+            {referenceUnit ? ` / ${referenceUnit}` : ""}
           </span>
+          {potentialSavings != null && (
+            <span className="font-medium text-zinc-900 dark:text-zinc-100">
+              Potential price difference: ₹{potentialSavings.toLocaleString("en-IN")}
+            </span>
+          )}
+          {source && <span className="text-[11px] text-zinc-500">{source}</span>}
         </div>
       )}
-      <Citation page={page} quote={quote} />
+      <Citation page={page} quote={quote} meta={source} />
     </div>
   );
 }
