@@ -7,11 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npm run test:medicine && npm run test:policy && npm run test:evaluation && npm run test:reference",
+    "test": "npm run test:medicine && npm run test:policy && npm run test:evaluation && npm run test:reference && npm run test:cghs",
     "test:medicine": "node --experimental-strip-types --test tests/medicine-regression.test.ts",
     "test:policy": "node --experimental-strip-types --test tests/policy-extraction.test.ts",
     "test:evaluation": "node --experimental-strip-types --test tests/evaluation.test.ts",
     "test:reference": "node --experimental-strip-types --test tests/reference-ingestion.test.ts",
+    "test:cghs": "node --experimental-strip-types --test tests/cghs-reference.test.ts",
     "ingest:reference": "node --experimental-strip-types scripts/ingest-reference.ts"
   },
   "dependencies": {

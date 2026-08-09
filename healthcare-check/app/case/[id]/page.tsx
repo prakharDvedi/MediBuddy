@@ -11,6 +11,7 @@ import { CompareEstimate } from "@/components/compare-estimate";
 import { QuestionsChecklist, type ChecklistItem } from "@/components/questions-checklist";
 import { AppShell, BackLink } from "@/components/app-shell";
 import { EmptyState, SectionHeader, StatusBadge } from "@/components/ui";
+import { calculatePotentialSavings } from "@/lib/audit/summary";
 import { redirect, notFound } from "next/navigation";
 
 type InsurancePolicySummary = {
@@ -52,10 +53,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   const totalBilled = (items ?? []).reduce((sum, item) => sum + (item.total_price ?? 0), 0);
   const highCount = (findings ?? []).filter((finding) => finding.confidence === "high").length;
   const mediumOrLowCount = (findings ?? []).filter((finding) => finding.confidence !== "high").length;
-  const potentialSavings = (findings ?? []).filter((finding) => finding.finding_type === "medicine_savings").reduce((sum, finding) => {
-    const evidence = finding.evidence as { potential_savings?: unknown } | null;
-    return sum + (typeof evidence?.potential_savings === "number" ? evidence.potential_savings : 0);
-  }, 0);
+  const potentialSavings = calculatePotentialSavings(findings ?? []);
   const questionsByFinding = new Map<string, NonNullable<typeof questions>>();
   for (const question of questions ?? []) {
     if (!question.finding_id) continue;

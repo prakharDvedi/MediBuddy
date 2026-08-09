@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { normalizeMedicineIdentity, normalizeText } from "../medicines/normalize.ts";
 import type { ExtractedMedicineIdentity, MedicinePriceObservation, ReferenceSnapshotRow } from "../medicines/types.ts";
 
-export type SourceKind = "nppa" | "pmbi";
+export type SourceKind = "nppa" | "pmbi" | "cghs";
 export type SnapshotStatus = "staged" | "accepted" | "rejected";
 export type FreshnessStatus = "fresh" | "stale" | "unknown";
 
@@ -78,7 +78,7 @@ function isValidTimestamp(value: string): boolean {
   return Number.isFinite(Date.parse(value));
 }
 
-function validateMetadata(metadata: SourceMetadata): ValidationIssue[] {
+export function validateSourceMetadata(metadata: SourceMetadata): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   if (!metadata.sourceName.trim()) issues.push({ row: 0, field: "sourceName", message: "Source name is required." });
   try {
@@ -155,7 +155,7 @@ function pmbiUnit(value: string): UnitInfo | null {
 }
 
 export function adaptNppaRows(rows: NppaSourceRow[], metadata: SourceMetadata): AdaptedSnapshot {
-  const issues = validateMetadata(metadata);
+  const issues = validateSourceMetadata(metadata);
   const prepared: PreparedMedicineObservation[] = [];
   const seenRecordIds = new Set<string>();
 
@@ -206,7 +206,7 @@ export function adaptNppaRows(rows: NppaSourceRow[], metadata: SourceMetadata): 
 }
 
 export function adaptPmbiRows(rows: PmbiSourceRow[], metadata: SourceMetadata): AdaptedSnapshot {
-  const issues = validateMetadata(metadata);
+  const issues = validateSourceMetadata(metadata);
   const prepared: PreparedMedicineObservation[] = [];
   const seenRecordIds = new Set<string>();
 

@@ -1,0 +1,70 @@
+{
+  "rows": [
+    {
+      "sourceRecordId": "CN001:uniform",
+      "code": "CN001",
+      "recordKind": "procedure",
+      "category": "Consultation",
+      "description": "Consultation OPD",
+      "rate": 350,
+      "rateUnit": "per consultation",
+      "rateContext": "uniform",
+      "applicabilityConditions": "Tier I (X city) source table; uniform irrespective of ward entitlement.",
+      "sourcePage": 7,
+      "sourceSection": "Annexure I — Tier I (X City)"
+    },
+    {
+      "sourceRecordId": "CN002:uniform",
+      "code": "CN002",
+      "recordKind": "procedure",
+      "category": "Consultation",
+      "description": "Consultation for Inpatients",
+      "rate": 350,
+      "rateUnit": "per consultation",
+      "rateContext": "uniform",
+      "applicabilityConditions": "Tier I (X city) source table; uniform irrespective of ward entitlement.",
+      "sourcePage": 7,
+      "sourceSection": "Annexure I — Tier I (X City)"
+    },
+    {
+      "sourceRecordId": "CN003:uniform",
+      "code": "CN003",
+      "recordKind": "procedure",
+      "category": "Consultation",
+      "description": "Consultation OPD – Super speciality/Psychiatry",
+      "rate": 700,
+      "rateUnit": "per consultation",
+      "rateContext": "uniform",
+      "applicabilityConditions": "Tier I (X city) source table; uniform irrespective of ward entitlement.",
+      "sourcePage": 7,
+      "sourceSection": "Annexure I — Tier I (X City)"
+    },
+    {
+      "sourceRecordId": "BP027:semi_private_tier_i_nabh",
+      "code": "BP027",
+      "recordKind": "procedure",
+      "category": "Burns And Plastic Surgery",
+      "description": "Plastic Surgery of the Nose - Minor",
+      "rate": 35000,
+      "rateUnit": "per package",
+      "rateContext": "semi_private_tier_i_nabh",
+      "applicabilityConditions": "Tier I (X city); semi-private ward; NABH HCO.",
+      "sourcePage": 107,
+      "sourceSection": "Annexure I — Tier I (X City)"
+    },
+    {
+      "sourceRecordId": "BP040:semi_private_tier_i_nabh",
+      "code": "BP040",
+      "recordKind": "package",
+      "category": "Burns And Plastic Surgery",
+      "description": "VAC Therapy/Dressing including all Consumables",
+      "rate": 10000,
+      "rateUnit": "per package",
+      "rateContext": "semi_private_tier_i_nabh",
+      "inclusionNotes": "Source description states including all Consumables.",
+      "applicabilityConditions": "Tier I (X city); semi-private ward; NABH HCO.",
+      "sourcePage": 108,
+      "sourceSection": "Annexure I — Tier I (X City)"
+    }
+  ]
+}

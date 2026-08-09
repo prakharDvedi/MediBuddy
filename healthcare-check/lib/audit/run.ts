@@ -1,5 +1,5 @@
 import type { createClient } from "@/lib/supabase/server";
-import type { ExtractedItemRow, ReferenceItemRow, InsurancePolicyRow } from "./types";
+import type { CghsReferenceRecordRow, ExtractedItemRow, ReferenceItemRow, InsurancePolicyRow } from "./types";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 import { checkPrices } from "./price";
@@ -11,9 +11,11 @@ import { checkUnexplained } from "./unexplained";
 import { checkInsuranceCoverage } from "./insurance-coverage";
 import { resolveMedicineIdentity } from "@/lib/medicines/match";
 import { checkMedicinePriceObservations, type MedicineProductRow } from "./medicine-price";
+import { checkCghsPrices } from "./cghs";
 import type { MedicineAliasCandidate, MedicinePriceObservation } from "@/lib/medicines/types";
 import { selectCurrentMedicineObservations } from "@/lib/reference/versioning";
 import type { ReferenceSnapshotRow } from "@/lib/medicines/types";
+import { selectCurrentCghsRecords } from "@/lib/reference/cghs-versioning";
 
 /**
  * Runs every deterministic hospital-side check against all items across
@@ -66,9 +68,16 @@ export async function runAuditEngine(
     );
   if (observationsError) throw new Error(observationsError.message);
 
+  const { data: cghsRecords, error: cghsRecordsError } = await supabase
+    .from("cghs_reference_records")
+    .select(
+      "id, snapshot_id, source_record_id, code, record_kind, category, description, normalized_name, rate, rate_unit, rate_context, room_type, inclusion_notes, exclusion_notes, applicability_conditions, source_page, source_section, raw_source",
+    );
+  if (cghsRecordsError) throw new Error(cghsRecordsError.message);
+
   const { data: referenceSnapshots, error: snapshotsError } = await supabase
     .from("reference_snapshots")
-    .select("id, source_kind, status, retrieved_at");
+    .select("id, source_kind, status, retrieved_at, source_name, source_url, effective_date");
   if (snapshotsError) throw new Error(snapshotsError.message);
 
   const { data: policies, error: policiesError } = await supabase
@@ -91,6 +100,18 @@ export async function runAuditEngine(
   })) as MedicinePriceObservation[];
   const snapshotRows = (referenceSnapshots ?? []) as ReferenceSnapshotRow[];
   const currentObservationRows = selectCurrentMedicineObservations(observationRows, snapshotRows);
+  const cghsRecordRows = (cghsRecords ?? []).map((record) => {
+    const snapshot = snapshotRows.find((candidate) => candidate.id === record.snapshot_id);
+    return {
+      ...record,
+      rate: Number(record.rate),
+      source_name: snapshot?.source_name ?? null,
+      source_url: snapshot?.source_url ?? null,
+      effective_date: snapshot?.effective_date ?? null,
+      retrieved_at: snapshot?.retrieved_at ?? null,
+    };
+  }) as CghsReferenceRecordRow[];
+  const currentCghsRecords = selectCurrentCghsRecords(cghsRecordRows, snapshotRows);
 
   const resolutions = new Map(
     itemRows
@@ -141,6 +162,7 @@ export async function runAuditEngine(
   const findings = [
     ...checkPrices(itemRows, referenceRows),
     ...checkMedicinePriceObservations(itemRows, resolutions, currentObservationRows),
+    ...checkCghsPrices(itemRows, currentCghsRecords),
     ...checkMedicineSavings(resolvedItemRows, legacyMedicineReferences),
     ...checkDuplicates(itemRows),
     ...checkQuantities(itemRows),

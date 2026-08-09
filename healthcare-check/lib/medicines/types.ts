@@ -92,7 +92,10 @@ export type MedicinePriceObservation = {
 
 export type ReferenceSnapshotRow = {
   id: string;
-  source_kind: "nppa" | "pmbi";
+  source_kind: "nppa" | "pmbi" | "cghs";
   status: "staged" | "accepted" | "rejected";
   retrieved_at: string;
+  source_name?: string | null;
+  source_url?: string | null;
+  effective_date?: string | null;
 };

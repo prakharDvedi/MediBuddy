@@ -1,5 +1,6 @@
 import type { createClient } from "@/lib/supabase/server";
 import type { Tone } from "@/lib/presentation";
+import { calculatePotentialSavings } from "@/lib/audit/summary";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -73,13 +74,7 @@ export async function getRecentCases(
     const caseDocuments = documentsByCase.get(caseRow.id) ?? [];
     const caseFindings = findingsByCase.get(caseRow.id) ?? [];
     const findingsCount = caseFindings.length;
-    const potentialSavings = caseFindings.reduce(
-      (total, finding) =>
-        finding.finding_type === "medicine_savings"
-          ? total + readNumber(finding.evidence, "potential_savings")
-          : total,
-      0,
-    );
+    const potentialSavings = calculatePotentialSavings(caseFindings);
     const latestDocument = [...caseDocuments].sort(compareDates)[0];
     const hasProcessingDocument = caseDocuments.some(
       (document) => document.status === "uploaded" || document.status === "processing" || document.status === "extracted",
@@ -118,17 +113,6 @@ function groupBy<T>(items: T[], keyOf: (item: T) => string) {
 
 function compareDates(a: { created_at: string }, b: { created_at: string }) {
   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-}
-
-function readNumber(value: unknown, key: string) {
-  if (typeof value !== "object" || value === null) return 0;
-
-  const candidate = (value as Record<string, unknown>)[key];
-  if (typeof candidate === "number" && Number.isFinite(candidate)) return Math.max(0, candidate);
-  if (typeof candidate === "string" && Number.isFinite(Number(candidate))) {
-    return Math.max(0, Number(candidate));
-  }
-  return 0;
 }
 
 function getWorkflowLabel(documents: DocumentRow[]) {

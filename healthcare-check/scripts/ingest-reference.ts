@@ -11,6 +11,11 @@ import {
   type SourceKind,
   type SourceMetadata,
 } from "../lib/reference/ingestion.ts";
+import {
+  adaptCghsRows,
+  cghsSnapshotContentHash,
+  type CghsSourceRow,
+} from "../lib/reference/cghs.ts";
 import type { MedicineProductCandidate } from "../lib/medicines/types.ts";
 
 const DEFAULT_SOURCE: Record<SourceKind, Omit<SourceMetadata, "sourceKind" | "retrievedAt" | "effectiveDate">> = {
@@ -21,6 +26,10 @@ const DEFAULT_SOURCE: Record<SourceKind, Omit<SourceMetadata, "sourceKind" | "re
   pmbi: {
     sourceName: "Jan Aushadhi / PMBI listed MRP",
     sourceUrl: "https://janaushadhi.gov.in/product-portfolio/product-mrp-list",
+  },
+  cghs: {
+    sourceName: "CGHS Rate List 2025",
+    sourceUrl: "https://dgehs.delhi.gov.in/sites/default/files/DGHS/universal/cghs_rate.pdf",
   },
 };
 
@@ -42,7 +51,7 @@ function argumentValue(args: string[], name: string): string | null {
 function usage(): string {
   return [
     "Usage:",
-    "  npm run ingest:reference -- --source nppa|pmbi --file snapshot.json [options]",
+    "  npm run ingest:reference -- --source nppa|pmbi|cghs --file snapshot.json [options]",
     "",
     "Options:",
     "  --source-name <name>       Override the official source label",
@@ -56,7 +65,7 @@ function usage(): string {
 function parseArguments(args: string[]): ParsedArguments | null {
   const sourceValue = argumentValue(args, "--source");
   const file = argumentValue(args, "--file");
-  if ((sourceValue !== "nppa" && sourceValue !== "pmbi") || !file) return null;
+  if ((sourceValue !== "nppa" && sourceValue !== "pmbi" && sourceValue !== "cghs") || !file) return null;
   const source = sourceValue as SourceKind;
   const defaults = DEFAULT_SOURCE[source];
   return {
@@ -102,9 +111,16 @@ async function main(): Promise<void> {
     retrievedAt: parsed.retrievedAt,
     effectiveDate: parsed.effectiveDate,
   };
-  const adapted = parsed.source === "nppa"
-    ? adaptNppaRows(rawRows as NppaSourceRow[], metadata)
-    : adaptPmbiRows(rawRows as PmbiSourceRow[], metadata);
+  const cghsAdapted = parsed.source === "cghs"
+    ? adaptCghsRows(rawRows as CghsSourceRow[], metadata)
+    : null;
+  const medicineAdapted = parsed.source === "cghs"
+    ? null
+    : parsed.source === "nppa"
+      ? adaptNppaRows(rawRows as NppaSourceRow[], metadata)
+      : adaptPmbiRows(rawRows as PmbiSourceRow[], metadata);
+  const adapted = cghsAdapted ?? medicineAdapted;
+  if (!adapted) throw new Error("Could not adapt reference snapshot.");
 
   if (adapted.issues.length > 0) {
     printValidationIssues(adapted.issues);
@@ -113,7 +129,9 @@ async function main(): Promise<void> {
   }
   if (adapted.rows.length === 0) throw new Error("Snapshot contains no valid rows.");
 
-  const contentHash = snapshotContentHash(adapted);
+  const contentHash = parsed.source === "cghs"
+    ? cghsSnapshotContentHash(cghsAdapted!)
+    : snapshotContentHash(medicineAdapted!);
   console.log(JSON.stringify({ source: parsed.source, rows: adapted.rows.length, contentHash, dryRun: parsed.dryRun }, null, 2));
   if (parsed.dryRun) return;
 
@@ -153,6 +171,37 @@ async function main(): Promise<void> {
   if (snapshotError || !snapshotData) throw new Error(snapshotError?.message ?? "Could not create staged snapshot.");
 
   try {
+    if (parsed.source === "cghs") {
+      const records = cghsAdapted!.rows.map((row) => ({
+        snapshot_id: snapshotData.id,
+        source_record_id: row.source_record_id,
+        code: row.code,
+        record_kind: row.record_kind,
+        category: row.category,
+        description: row.description,
+        normalized_name: row.normalized_name,
+        rate: row.rate,
+        rate_unit: row.rate_unit,
+        rate_context: row.rate_context,
+        room_type: row.room_type,
+        inclusion_notes: row.inclusion_notes,
+        exclusion_notes: row.exclusion_notes,
+        applicability_conditions: row.applicability_conditions,
+        source_page: row.source_page,
+        source_section: row.source_section,
+        raw_source: row.raw_source,
+      }));
+      const { error: recordError } = await supabase.from("cghs_reference_records").insert(records);
+      if (recordError) throw new Error(recordError.message);
+      const { error: acceptError } = await supabase
+        .from("reference_snapshots")
+        .update({ status: "accepted", row_count: records.length })
+        .eq("id", snapshotData.id);
+      if (acceptError) throw new Error(acceptError.message);
+      console.log(`Accepted CGHS snapshot ${snapshotData.id} with ${records.length} records.`);
+      return;
+    }
+
     const { data: productData, error: productError } = await supabase
       .from("medicine_products")
       .select("id, canonical_name, normalized_identity, dosage_form, route");
@@ -162,7 +211,7 @@ async function main(): Promise<void> {
     const unresolvedRows: PreparedMedicineObservation[] = [];
     const productIdByRow = new Map<string, string>();
 
-    for (const row of adapted.rows) {
+    for (const row of medicineAdapted!.rows) {
       const resolution = resolveMedicineIdentity(row.identity, row.canonical_name, row.normalized_identity, products, []);
       if (resolution.status === "needs_review" || resolution.status === "combination_unresolved") {
         throw new Error(`Existing medicine catalog needs review for source row ${row.source_record_id}: ${resolution.reason}`);
@@ -202,7 +251,7 @@ async function main(): Promise<void> {
       }
     }
 
-    const observations = adapted.rows.map((row) => ({
+    const observations = medicineAdapted!.rows.map((row) => ({
       snapshot_id: snapshotData.id,
       medicine_product_id: productIdByRow.get(row.source_record_id),
       source_kind: row.source_kind,

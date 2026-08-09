@@ -35,6 +35,7 @@ export type FindingLineage = {
   reference: {
     reference_item_id: string | null;
     observation_id: string | null;
+    record_id: string | null;
     source_kind: string | null;
   };
   rule: {
@@ -51,6 +52,7 @@ export type ItemLineageOptions = {
   canonicalEntityType?: string | null;
   referenceItemId?: string | null;
   observationId?: string | null;
+  referenceRecordId?: string | null;
   sourceKind?: string | null;
   calculation?: LineageCalculation | null;
 };
@@ -98,6 +100,7 @@ export function itemsLineage(
     reference: {
       reference_item_id: options.referenceItemId ?? null,
       observation_id: options.observationId ?? null,
+      record_id: options.referenceRecordId ?? null,
       source_kind: options.sourceKind ?? null,
     },
     rule: { id: ruleId, version: RULE_VERSION },
@@ -146,6 +149,7 @@ export function policyLineage(
     reference: {
       reference_item_id: null,
       observation_id: null,
+      record_id: null,
       source_kind: null,
     },
     rule: { id: ruleId, version: RULE_VERSION },
