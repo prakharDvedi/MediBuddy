@@ -13,8 +13,30 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.medbud.space"),
   title: "MedBud | Understand your healthcare costs",
   description: "Understand your hospital bill, insurance policy, and next questions.",
+  openGraph: {
+    type: "website",
+    url: "https://www.medbud.space/",
+    siteName: "MedBud",
+    title: "MedBud | Understand your healthcare costs",
+    description: "Understand your hospital bill, insurance policy, and next questions.",
+    images: [
+      {
+        url: "/logo/logo.webp",
+        width: 246,
+        height: 257,
+        alt: "MedBud logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "MedBud | Understand your healthcare costs",
+    description: "Understand your hospital bill, insurance policy, and next questions.",
+    images: ["/logo/logo.webp"],
+  },
   icons: {
     icon: "/logo/logo.webp",
   },

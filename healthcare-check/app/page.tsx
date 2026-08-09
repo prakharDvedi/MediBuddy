@@ -19,12 +19,11 @@ export default function Home() {
           <div className="pointer-events-none absolute -right-40 -top-24 h-96 w-96 rounded-full bg-success-bg/80 blur-3xl" />
           <div className="pointer-events-none absolute right-24 top-36 h-64 w-64 rounded-full bg-info-bg/80 blur-3xl" />
           <div className="relative min-w-0">
-            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-info">A clearer way to question healthcare costs</p>
-            <h1 className="mt-5 max-w-2xl text-4xl font-semibold leading-[1.04] tracking-[-0.04em] text-text-primary sm:text-6xl">
+            <h1 className="max-w-2xl text-4xl font-semibold leading-[1.04] tracking-[-0.04em] text-text-primary sm:text-[3.25rem]">
               Understand the bill. Know what to ask next.
             </h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-text-muted sm:text-lg">
-              MedBud turns hospital bills and insurance policies into plain-language summaries, evidence-backed findings, and practical questions.
+              Review hospital bills and insurance policies with reference-backed findings and plain-language explanations.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/signup" className="focus-ring inline-flex min-h-11 items-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-white hover:bg-primary-hover">
@@ -34,7 +33,7 @@ export default function Home() {
                 Log in
               </Link>
             </div>
-            <p className="mt-5 max-w-lg text-xs leading-5 text-text-muted">
+            <p className="mt-4 max-w-md text-xs leading-5 text-text-muted/75">
               MedBud helps you ask better questions. It does not diagnose, judge clinical care, or decide that a hospital has acted unlawfully.
             </p>
           </div>
