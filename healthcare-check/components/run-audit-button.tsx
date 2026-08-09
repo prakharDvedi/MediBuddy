@@ -3,15 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ProcessingSteps, type StepState } from "@/components/processing-steps";
+import { Button, ErrorState, SectionHeader, StatusBadge } from "@/components/ui";
 
 const STAGE_LABELS = ["Checking", "Preparing questions"];
 
-export function RunAuditButton({ caseId }: { caseId: string }) {
+export function ReviewWorkspaceHeader({ caseId }: { caseId: string }) {
   // -1 = idle, 0-1 = that stage active, 2 = all done
   const [stage, setStage] = useState(-1);
   const [errorStage, setErrorStage] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [summary, setSummary] = useState<string | null>(null);
   const router = useRouter();
   const busy = stage >= 0 && stage < 2;
 
@@ -20,7 +20,6 @@ export function RunAuditButton({ caseId }: { caseId: string }) {
     setStage(currentStage);
     setErrorStage(null);
     setError(null);
-    setSummary(null);
 
     const auditRes = await fetch(`/api/cases/${caseId}/audit`, { method: "POST" });
     const audit = await auditRes.json();
@@ -40,7 +39,6 @@ export function RunAuditButton({ caseId }: { caseId: string }) {
       return;
     }
 
-    setSummary(`${audit.findingsCount} finding(s), ${questions.questionsCount} question(s).`);
     setStage(2);
     router.refresh();
   }
@@ -54,21 +52,27 @@ export function RunAuditButton({ caseId }: { caseId: string }) {
   });
 
   return (
-    <div>
-      <button
-        onClick={handleClick}
-        disabled={busy}
-        className="rounded-full border border-black/15 dark:border-white/15 px-4 py-2 text-sm font-medium disabled:opacity-50"
-      >
-        {busy ? "Working..." : "Run audit"}
-      </button>
+    <div className="grid gap-4">
+      <SectionHeader
+        eyebrow="Your review"
+        title="Things worth checking"
+        description="These are observations to clarify, not accusations. Open the evidence before deciding what to ask."
+        action={
+          <Button type="button" onClick={() => void handleClick()} disabled={busy} className="w-full sm:w-auto">
+            {busy ? "Reviewing..." : "Review charges"}
+          </Button>
+        }
+      />
       {stage >= 0 && (
-        <div className="mt-3">
+        <div className="w-full rounded-[0.875rem] border border-info/20 bg-info-bg px-4 py-3 sm:px-5">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-sm font-medium text-text-primary">{error ? "Review needs attention" : stage === 2 ? "Review ready" : "Preparing your review"}</p>
+            <StatusBadge tone={error ? "danger" : stage === 2 ? "success" : "info"}>{error ? "Needs attention" : stage === 2 ? "Ready" : "In progress"}</StatusBadge>
+          </div>
           <ProcessingSteps steps={steps} />
         </div>
       )}
-      {summary && <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{summary}</p>}
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <ErrorState message={error} />}
     </div>
   );
 }

@@ -13,8 +13,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Healthcare Check",
-  description: "Understand your healthcare costs before you pay.",
+  title: "MediBud | Understand your healthcare costs",
+  description: "Understand your hospital bill, insurance policy, and next questions.",
+  icons: {
+    icon: "/logo/logo.webp",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

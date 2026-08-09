@@ -1,47 +1,20 @@
-export type StepState = "pending" | "active" | "done" | "error";
+import { cn } from "@/components/ui";
 
+export type StepState = "pending" | "active" | "done" | "error";
 export type Step = { label: string; state: StepState };
 
-/**
- * Fixed-stage loading indicator ("Uploading" / "Extracting" / ...) instead
- * of a single line of text that keeps replacing itself — lets the user see
- * the whole pipeline and exactly where it is in one glance.
- */
 export function ProcessingSteps({ steps }: { steps: Step[] }) {
   return (
-    <ul className="flex flex-col gap-1.5">
+    <ol className="grid gap-3 sm:grid-cols-2 sm:gap-0">
       {steps.map((step, i) => (
-        <li key={i} className="flex items-center gap-2.5 text-sm">
-          <span
-            className={
-              "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[10px] leading-none " +
-              (step.state === "done"
-                ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                : step.state === "active"
-                  ? "border-zinc-400 dark:border-zinc-500 animate-pulse"
-                  : step.state === "error"
-                    ? "border-red-600 text-red-600"
-                    : "border-black/15 dark:border-white/15")
-            }
-            aria-hidden
-          >
-            {step.state === "done" ? "✓" : step.state === "error" ? "!" : ""}
+        <li key={step.label} className="relative flex items-center gap-3 sm:block sm:pr-4">
+          {i < steps.length - 1 && <span className="absolute left-3 top-7 hidden h-px w-[calc(100%-1.25rem)] bg-border sm:block" />}
+          <span className={cn("relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold", step.state === "done" && "border-success bg-success text-white", step.state === "active" && "border-info bg-info-bg text-info", step.state === "error" && "border-danger bg-danger text-white", step.state === "pending" && "border-border-strong bg-surface text-text-muted")} aria-hidden>
+            {step.state === "done" ? "✓" : step.state === "error" ? "!" : i + 1}
           </span>
-          <span
-            className={
-              step.state === "pending"
-                ? "text-zinc-400 dark:text-zinc-600"
-                : step.state === "error"
-                  ? "text-red-600"
-                  : step.state === "active"
-                    ? "font-medium text-zinc-900 dark:text-zinc-100"
-                    : "text-zinc-600 dark:text-zinc-400"
-            }
-          >
-            {step.label}
-          </span>
+          <span className={cn("text-sm sm:mt-2 sm:block", step.state === "pending" ? "text-text-muted" : step.state === "error" ? "font-medium text-danger" : step.state === "active" ? "font-medium text-info" : "text-success")}>{step.label}</span>
         </li>
       ))}
-    </ul>
+    </ol>
   );
 }

@@ -5,13 +5,8 @@ import { useRef, useState } from "react";
 import { UploadDocument } from "@/components/upload-document";
 import { createCase } from "@/lib/cases/create-case";
 import { CASE_INTENT_CONFIG, type CaseIntent } from "@/lib/cases/intents";
+import { ErrorState } from "@/components/ui";
 
-/**
- * No case row exists yet on this screen — one gets created the first time
- * the user does something real (names it, or uploads a file), never just
- * from opening the page. Both paths share one in-flight promise so if the
- * user somehow triggers both at once, only one row gets created.
- */
 export function NewCaseShell({ intent }: { intent: CaseIntent }) {
   const config = CASE_INTENT_CONFIG[intent];
   const [title, setTitle] = useState("");
@@ -40,47 +35,48 @@ export function NewCaseShell({ intent }: { intent: CaseIntent }) {
       const id = await ensureCase();
       router.push(`/case/${id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create case");
+      setError(err instanceof Error ? err.message : "Could not create this check");
       setBusy(false);
     }
   }
 
   return (
-    <div>
-      <h1 className="mt-8 text-3xl font-semibold leading-tight text-black dark:text-zinc-50">
-        {config.onboardingTitle}
-      </h1>
-      <p className="mt-3 max-w-2xl text-base leading-7 text-zinc-600 dark:text-zinc-400">
-        {config.onboardingDescription}
-      </p>
-      <p className="mt-8 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-        Name this check (optional)
-      </p>
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        onBlur={handleTitleBlur}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            e.currentTarget.blur();
-          }
-        }}
-        disabled={busy}
-        placeholder="e.g. Sunrise Hospital bill"
-        autoFocus
-        className="mt-2 block w-full rounded border border-black/15 dark:border-white/15 bg-transparent px-1 py-0.5 text-2xl font-semibold text-black dark:text-zinc-50 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 disabled:opacity-50"
-      />
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-
-      <div className="mt-6">
-        <UploadDocument
-          caseId={null}
-          ensureCase={ensureCase}
-          initialDocType={config.initialDocumentType}
-          helperText={config.uploadGuidance}
-        />
+    <div className="mt-10">
+      <div className="max-w-2xl">
+        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-info">Step 1 of 2 · Add a document</p>
+        <h1 className="mt-3 text-3xl font-semibold leading-tight tracking-[-0.03em] text-text-primary sm:text-4xl">{config.onboardingTitle}</h1>
+        <p className="mt-4 text-base leading-7 text-text-muted">{config.onboardingDescription}</p>
       </div>
+
+      <div className="mt-8 rounded-[1rem] border border-border bg-surface p-5 shadow-[0_14px_34px_rgb(23_43_58_/_0.05)] sm:p-6">
+        <label htmlFor="case-title" className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">Name this check <span className="font-normal normal-case tracking-normal">(optional)</span></label>
+        <input
+          id="case-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={handleTitleBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.currentTarget.blur();
+            }
+          }}
+          disabled={busy}
+          placeholder="e.g. Sunrise Hospital estimate"
+          autoFocus
+          className="focus-ring mt-2 block w-full border-b border-border-strong bg-transparent px-0 py-2 text-2xl font-semibold tracking-tight text-text-primary placeholder:text-text-muted/50 disabled:opacity-50"
+        />
+        {error && <div className="mt-4"><ErrorState message={error} /></div>}
+        <div className="mt-6 border-t border-border pt-6">
+          <UploadDocument
+            caseId={null}
+            ensureCase={ensureCase}
+            initialDocType={config.initialDocumentType}
+            helperText={config.uploadGuidance}
+          />
+        </div>
+      </div>
+      <p className="mt-4 text-xs leading-5 text-text-muted">Your original document stays private. MediBud shows source pages alongside important findings so you can verify the details yourself.</p>
     </div>
   );
 }

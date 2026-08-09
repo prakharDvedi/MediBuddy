@@ -8,6 +8,19 @@
 plan.md
 status.md
 
+# generated build, dependency, test, and browser artifacts
+.next/
+**/.next/
+node_modules/
+**/node_modules/
+/tmp/
+*.log
+*.trace
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
 # OS cruft
 .DS_Store
 Thumbs.db

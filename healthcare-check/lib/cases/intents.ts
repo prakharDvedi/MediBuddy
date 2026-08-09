@@ -1,3 +1,5 @@
+import type { Tone } from "@/lib/presentation";
+
 export type CaseIntent = "bill" | "policy" | "compare";
 
 export type UploadDocumentType = "unknown" | "policy";
@@ -9,6 +11,8 @@ export type CaseIntentConfig = {
   onboardingDescription: string;
   uploadGuidance: string;
   initialDocumentType: UploadDocumentType;
+  eyebrow: string;
+  tone: Tone;
 };
 
 export const CASE_INTENT_CONFIG: Record<CaseIntent, CaseIntentConfig> = {
@@ -20,6 +24,8 @@ export const CASE_INTENT_CONFIG: Record<CaseIntent, CaseIntentConfig> = {
       "We'll extract the charges, compare available reference prices, and highlight things worth checking.",
     uploadGuidance: "Start with a hospital bill or estimate. You can add another document later.",
     initialDocumentType: "unknown",
+    eyebrow: "Hospital costs",
+    tone: "warning",
   },
   policy: {
     title: "Understand my insurance policy",
@@ -29,6 +35,8 @@ export const CASE_INTENT_CONFIG: Record<CaseIntent, CaseIntentConfig> = {
       "We'll summarize coverage limits and help you ask clear questions about what is covered.",
     uploadGuidance: "Start with your insurance policy. We will extract its coverage details for you.",
     initialDocumentType: "policy",
+    eyebrow: "Policy clarity",
+    tone: "info",
   },
   compare: {
     title: "Check what insurance may pay",
@@ -38,6 +46,8 @@ export const CASE_INTENT_CONFIG: Record<CaseIntent, CaseIntentConfig> = {
       "Add your insurance policy next to estimate what insurance may pay and what you may pay.",
     uploadGuidance: "Start with a hospital bill or estimate. You can add your insurance policy on the next screen.",
     initialDocumentType: "unknown",
+    eyebrow: "Planning ahead",
+    tone: "success",
   },
 };
 

@@ -1,95 +1,109 @@
 import Link from "next/link";
+import { PublicHeader } from "@/components/app-shell";
+import { CASE_INTENT_CONFIG, type CaseIntent } from "@/lib/cases/intents";
+import { TONE_CLASSES } from "@/lib/presentation";
 
-const HOSPITAL_STEPS = [
-  "Upload a hospital estimate or bill (PDF or photo).",
-  "Get a line-by-line breakdown, flagged against reference prices, duplicates, and vague charges.",
-  "Leave with specific, ready-to-ask questions for the billing desk — evidence and page numbers included.",
-];
-
-const INSURANCE_STEPS = [
-  "Upload your policy document.",
-  "Ask it plain questions and get answers grounded in your policy's own text, cited by page and section.",
-  "Compare it against a bill to see exactly what you'd pay, and why, before you commit to anything.",
-];
+const USE_CASES = [
+  { number: "01", intent: "bill" },
+  { number: "02", intent: "policy" },
+  { number: "03", intent: "compare" },
+] satisfies { number: string; intent: CaseIntent }[];
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
-      <nav className="flex items-center justify-between border-b border-black/10 dark:border-white/10 px-6 py-4">
-        <span className="font-semibold text-black dark:text-zinc-50">Healthcare Check</span>
-        <div className="flex items-center gap-6">
-          <Link href="/login" className="text-sm text-zinc-600 dark:text-zinc-400 hover:underline">
-            Log in
-          </Link>
-          <Link
-            href="/signup"
-            className="rounded-full bg-black dark:bg-white text-white dark:text-black px-4 py-2 text-sm font-medium"
-          >
-            Sign up
-          </Link>
-        </div>
-      </nav>
+    <div className="min-h-screen overflow-hidden bg-background text-text-primary">
+      <PublicHeader />
 
-      <main className="mx-auto max-w-3xl px-6 py-20">
-        <h1 className="text-4xl font-semibold leading-tight text-black dark:text-zinc-50 sm:text-5xl">
-          Understand your healthcare costs before you pay.
-        </h1>
-        <p className="mt-4 max-w-xl text-lg text-zinc-600 dark:text-zinc-400">
-          Upload a hospital bill or an insurance policy. Get a plain breakdown of what&apos;s
-          being charged, what your policy actually covers, and exactly what to ask before you
-          hand over money.
-        </p>
-        <div className="mt-8 flex gap-4">
-          <Link
-            href="/signup"
-            className="rounded-full bg-black dark:bg-white text-white dark:text-black px-6 py-3 text-sm font-medium"
-          >
-            Get started
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-full border border-black/15 dark:border-white/15 px-6 py-3 text-sm font-medium text-black dark:text-zinc-50"
-          >
-            Log in
-          </Link>
-        </div>
-
-        <div className="mt-20 grid gap-10 sm:grid-cols-2">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Hospital bills
+      <main>
+        <section className="content-width relative grid min-w-0 gap-12 py-16 sm:py-24 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-16">
+          <div className="pointer-events-none absolute -right-40 -top-24 h-96 w-96 rounded-full bg-success-bg/80 blur-3xl" />
+          <div className="pointer-events-none absolute right-24 top-36 h-64 w-64 rounded-full bg-info-bg/80 blur-3xl" />
+          <div className="relative min-w-0">
+            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-info">A clearer way to question healthcare costs</p>
+            <h1 className="mt-5 max-w-2xl text-4xl font-semibold leading-[1.04] tracking-[-0.04em] text-text-primary sm:text-6xl">
+              Understand the bill. Know what to ask next.
+            </h1>
+            <p className="mt-6 max-w-xl text-base leading-7 text-text-muted sm:text-lg">
+              MediBud turns hospital bills and insurance policies into plain-language summaries, evidence-backed findings, and practical questions.
             </p>
-            <ol className="mt-3 flex flex-col gap-3">
-              {HOSPITAL_STEPS.map((step, i) => (
-                <li key={i} className="flex gap-3 text-sm text-zinc-700 dark:text-zinc-300">
-                  <span className="text-zinc-400">{i + 1}</span>
-                  <span>{step}</span>
-                </li>
-              ))}
-            </ol>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link href="/signup" className="focus-ring inline-flex min-h-11 items-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-white hover:bg-primary-hover">
+                Check a bill or policy
+              </Link>
+              <Link href="/login" className="focus-ring inline-flex min-h-11 items-center rounded-xl border border-border-strong bg-surface px-5 py-3 text-sm font-medium text-text-primary hover:bg-surface-elevated">
+                Log in
+              </Link>
+            </div>
+            <p className="mt-5 max-w-lg text-xs leading-5 text-text-muted">
+              MediBud helps you ask better questions. It does not diagnose, judge clinical care, or decide that a hospital has acted unlawfully.
+            </p>
           </div>
 
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Insurance policies
-            </p>
-            <ol className="mt-3 flex flex-col gap-3">
-              {INSURANCE_STEPS.map((step, i) => (
-                <li key={i} className="flex gap-3 text-sm text-zinc-700 dark:text-zinc-300">
-                  <span className="text-zinc-400">{i + 1}</span>
-                  <span>{step}</span>
-                </li>
-              ))}
-            </ol>
+          <div className="relative min-w-0 lg:pl-4">
+            <div className="absolute -inset-5 rounded-[2rem] bg-info-bg/50 blur-2xl" />
+            <div className="relative rounded-[1.25rem] border border-border bg-surface-elevated p-4 shadow-[0_24px_70px_rgb(23_43_58_/_0.12)] sm:p-6">
+              <div className="flex items-center justify-between border-b border-border pb-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">Example review</p>
+                  <p className="mt-1 font-semibold text-text-primary">Surgery estimate</p>
+                </div>
+                <span className="rounded-full bg-warning-bg px-2.5 py-1 text-xs font-medium text-warning">Worth investigating</span>
+              </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl bg-soft-canvas p-4">
+                  <p className="text-xs text-text-muted">Total estimate</p>
+                  <p className="mt-2 text-2xl font-semibold tabular-nums text-text-primary">₹1,84,620</p>
+                </div>
+                <div className="rounded-xl bg-warning-bg p-4 text-warning">
+                  <p className="text-xs opacity-75">Potential difference</p>
+                  <p className="mt-2 text-2xl font-semibold tabular-nums">₹416.12</p>
+                </div>
+              </div>
+              <div className="mt-3 rounded-xl border border-info/20 bg-info-bg p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-info">Medicine price</p>
+                    <p className="mt-1 font-medium text-text-primary">Ceftriaxone 1 g injection</p>
+                  </div>
+                  <span className="text-xs font-medium text-info">Page 3</span>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                  <div><p className="text-text-muted">Hospital charge</p><p className="mt-1 font-semibold text-text-primary">₹480 / vial</p></div>
+                  <div><p className="text-text-muted">NPPA reference</p><p className="mt-1 font-semibold text-text-primary">₹63.88 / vial</p></div>
+                </div>
+              </div>
+              <p className="mt-4 text-xs leading-5 text-text-muted">A reference price is evidence to discuss, not a guarantee that money is recoverable.</p>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <p className="mt-16 border-t border-black/5 dark:border-white/10 pt-6 text-xs text-zinc-500">
-          Medicine comparisons use NPPA ceiling prices where a matching scheduled formulation and
-          unit can be verified. These are legal maximum ex-manufacturer prices excluding GST — not
-          hospital billing caps or market prices. Other reference rows may be illustrative; every
-          flagged item is worth checking directly with your hospital, pharmacist, or insurer.
-        </p>
+        <section className="border-y border-border bg-soft-canvas/70">
+          <div className="content-width py-12 sm:py-16">
+            <div className="max-w-xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">Start with a question</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">The right review depends on what you need to know.</h2>
+            </div>
+            <div className="mt-7 grid gap-3 lg:grid-cols-3">
+              {USE_CASES.map((item) => {
+                const config = CASE_INTENT_CONFIG[item.intent];
+                return <Link key={item.number} href="/signup" className={`focus-ring group rounded-[1rem] border p-5 transition-transform hover:-translate-y-0.5 ${TONE_CLASSES[config.tone]}`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="text-xs font-semibold tracking-[0.12em] text-text-muted">{item.number}</span>
+                    <span className="text-lg text-text-muted transition-transform group-hover:translate-x-1">→</span>
+                  </div>
+                  <p className="mt-8 text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">{config.eyebrow}</p>
+                  <h3 className="mt-2 text-lg font-semibold text-text-primary">{config.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-text-muted">{config.cardDescription}</p>
+                </Link>;
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="content-width flex flex-col gap-6 py-10 text-xs leading-5 text-text-muted sm:flex-row sm:items-start sm:justify-between">
+          <p className="max-w-2xl">MediBud keeps your original documents separate from extracted information and shows where important numbers came from.</p>
+          <p className="max-w-sm sm:text-right">Reference prices are not hospital billing caps or guaranteed recoverable amounts. Always confirm with your hospital, pharmacist, or insurer.</p>
+        </section>
       </main>
     </div>
   );

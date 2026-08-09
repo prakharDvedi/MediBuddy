@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { ErrorState, ImpactCard, MoneyValue, StatusBadge } from "@/components/ui";
+import { formatMoney } from "@/lib/dashboard/format";
 
 type CompareResult = {
   totalBilled: number;
@@ -15,10 +17,6 @@ type CompareResult = {
   whyLines: { label: string; amount: number; reason: string }[];
 };
 
-function inr(n: number) {
-  return `₹${n.toLocaleString("en-IN")}`;
-}
-
 export function CompareEstimate({ caseId }: { caseId: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,76 +26,23 @@ export function CompareEstimate({ caseId }: { caseId: string }) {
     setBusy(true);
     setError(null);
     setResult(null);
-
-    const res = await fetch(`/api/insurance/${caseId}/compare`, { method: "POST" });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error ?? "Comparison failed");
-    } else {
+    try {
+      const res = await fetch(`/api/insurance/${caseId}/compare`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Comparison failed");
       setResult(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Comparison failed");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   return (
-    <div className="rounded-lg border border-black/10 dark:border-white/10 p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-black dark:text-zinc-50">
-          Estimate vs. policy comparison
-        </p>
-        <button
-          onClick={handleCompare}
-          disabled={busy}
-          className="rounded-full border border-black/15 dark:border-white/15 px-4 py-1.5 text-sm font-medium disabled:opacity-50"
-        >
-          {busy ? "Comparing..." : "Compare"}
-        </button>
-      </div>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      {result && (
-        <div className="mt-3 border-t border-black/5 dark:border-white/10 pt-3">
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            <dt className="text-zinc-500">Total billed</dt>
-            <dd className="text-zinc-800 dark:text-zinc-200">{inr(result.totalBilled)}</dd>
-            {result.subLimitDeductions > 0 && (
-              <>
-                <dt className="text-zinc-500">Sub-limit deductions</dt>
-                <dd className="text-zinc-800 dark:text-zinc-200">
-                  -{inr(result.subLimitDeductions)}
-                </dd>
-              </>
-            )}
-            <dt className="text-zinc-500">Deductible applied</dt>
-            <dd className="text-zinc-800 dark:text-zinc-200">-{inr(result.deductibleApplied)}</dd>
-            <dt className="text-zinc-500">Co-payment ({result.copayPercent}%)</dt>
-            <dd className="text-zinc-800 dark:text-zinc-200">-{inr(result.copayAmount)}</dd>
-            <dt className="font-medium text-zinc-700 dark:text-zinc-300">Insurer pays</dt>
-            <dd className="font-medium text-zinc-800 dark:text-zinc-200">
-              {inr(result.insurerPays)}
-            </dd>
-            <dt className="font-medium text-zinc-700 dark:text-zinc-300">You pay</dt>
-            <dd className="font-medium text-zinc-800 dark:text-zinc-200">
-              {inr(result.patientPays)}
-            </dd>
-          </dl>
-          {result.whyLines.length > 0 && (
-            <div className="mt-3 border-t border-black/5 dark:border-white/10 pt-2">
-              <p className="text-xs font-medium text-zinc-500">Why</p>
-              <ul className="mt-1 flex flex-col gap-2">
-                {result.whyLines.map((w, i) => (
-                  <li key={i} className="text-sm text-zinc-700 dark:text-zinc-300">
-                    <span className="font-medium">
-                      {w.label}: {inr(w.amount)}
-                    </span>
-                    <br />
-                    <span className="text-xs text-zinc-500">{w.reason}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
+    <div className="rounded-[1rem] border border-success/20 bg-success-bg p-5 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-success">Bill + policy</p><h3 className="mt-1 text-xl font-semibold tracking-tight text-text-primary">What might insurance pay?</h3><p className="mt-1 text-sm leading-6 text-text-muted">An estimate based on the bill and the limits found in your policy.</p></div><button onClick={() => void handleCompare()} disabled={busy} className="focus-ring min-h-10 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50">{busy ? "Calculating..." : result ? "Recalculate" : "Compare now"}</button></div>
+      {error && <div className="mt-4"><ErrorState message={error} /></div>}
+      {result && <div className="mt-5"><div className="grid gap-3 sm:grid-cols-2"><ImpactCard tone="success" label="Estimated insurer payment"><MoneyValue value={result.insurerPays} size="lg" className="mt-2 block text-success" /><p className="mt-2 text-xs text-text-muted">This is an estimate, not a final claim decision.</p></ImpactCard><ImpactCard tone="warning" label="Estimated patient responsibility"><MoneyValue value={result.patientPays} size="lg" className="mt-2 block text-warning" /><p className="mt-2 text-xs text-text-muted">Confirm the final amount with your insurer and hospital.</p></ImpactCard></div><div className="mt-5 rounded-[1rem] border border-border bg-surface p-5"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.1em] text-text-muted">How the estimate changes</p><p className="mt-1 font-medium text-text-primary">Starting from {formatMoney(result.totalBilled)}</p></div><StatusBadge tone="info">Policy-based estimate</StatusBadge></div><div className="mt-4 grid gap-2">{result.whyLines.map((line, index) => <div key={`${line.label}-${index}`} className="flex flex-col gap-1 border-t border-border pt-3 first:border-t-0 first:pt-0 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-medium text-text-primary">{line.label}</p><p className="text-xs leading-5 text-text-muted">{line.reason}</p></div><p className="shrink-0 text-sm font-semibold tabular-nums text-text-primary">−{formatMoney(line.amount)}</p></div>)}</div></div></div>}
     </div>
   );
 }

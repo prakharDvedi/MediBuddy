@@ -62,9 +62,9 @@ export function EditableCaseTitle({ caseId, title }: { caseId: string; title: st
           }}
           disabled={saving}
           autoFocus
-          className="w-full rounded border border-black/15 dark:border-white/15 bg-transparent px-1 py-0.5 text-2xl font-semibold text-black dark:text-zinc-50 disabled:opacity-50"
+          className="focus-ring w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-2xl font-semibold tracking-tight text-text-primary disabled:opacity-50"
         />
-        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-1 text-sm text-danger">{error}</p>}
       </div>
     );
   }
@@ -72,7 +72,7 @@ export function EditableCaseTitle({ caseId, title }: { caseId: string; title: st
   return (
     <button
       onClick={startEditing}
-      className="mt-2 block text-left text-2xl font-semibold text-black dark:text-zinc-50 hover:underline decoration-black/20 dark:decoration-white/20"
+      className="focus-ring mt-2 block rounded-lg text-left text-2xl font-semibold tracking-tight text-text-primary hover:underline decoration-border-strong"
       title="Click to rename"
     >
       {title}

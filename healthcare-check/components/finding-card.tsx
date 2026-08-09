@@ -1,3 +1,8 @@
+import { MedicinePriceEvidence } from "./medicine-price-evidence";
+import { FindingSurface, SourceBadge, StatusBadge } from "@/components/ui";
+import { confidenceLabel, confidenceTone, findingTone } from "@/lib/presentation";
+import { formatMoney } from "@/lib/dashboard/format";
+
 type Finding = {
   id: string;
   finding_type: string;
@@ -10,140 +15,61 @@ type Finding = {
 type Question = { id: string; question_text: string };
 
 const TYPE_LABELS: Record<string, string> = {
-  price: "Price",
-  quantity: "Quantity",
-  duplicate: "Duplicate",
+  price: "Price worth checking",
+  quantity: "Quantity worth checking",
+  duplicate: "Possible duplicate",
   package_overlap: "Package overlap",
-  unexplained: "Unexplained charge",
-  medicine_savings: "Potential savings",
-  unit_unverified: "Unit not verified",
-  coverage_gap: "Coverage term",
+  unexplained: "Charge to clarify",
+  medicine_savings: "Medicine price",
+  unit_unverified: "Unit needs confirmation",
+  coverage_gap: "Policy limitation",
 };
 
-function ConfidenceBadge({ confidence }: { confidence: string }) {
-  const isHigh = confidence === "high";
-  return (
-    <span
-      className={
-        "shrink-0 rounded-full px-2.5 py-1 text-xs font-medium " +
-        (isHigh
-          ? "bg-black text-white dark:bg-white dark:text-black"
-          : "border border-black/15 dark:border-white/15 text-zinc-600 dark:text-zinc-400")
-      }
-    >
-      {confidence} confidence
-    </span>
-  );
-}
-
-function Citation({
-  page,
-  quote,
-  meta,
-}: {
-  page?: number | null;
-  quote?: string | null;
-  meta?: string | null;
-}) {
+function Citation({ page, quote, meta }: { page?: number | null; quote?: string | null; meta?: string | null }) {
   if (!quote) return null;
   return (
-    <div className="flex gap-2 rounded border border-black/10 dark:border-white/10 bg-black/[.02] dark:bg-white/[.03] px-2.5 py-2">
-      {page != null && (
-        <span className="h-fit shrink-0 rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600 dark:text-zinc-400">
-          p.{page}
-        </span>
-      )}
+    <div className="flex gap-3 rounded-xl border border-info/20 bg-info-bg px-3 py-3">
+      {page != null && <span className="h-fit shrink-0 rounded-md bg-surface px-1.5 py-0.5 text-[10px] font-semibold text-info">p.{page}</span>}
       <div className="min-w-0">
-        <p className="line-clamp-2 text-xs italic text-zinc-600 dark:text-zinc-400">
-          &ldquo;{quote}&rdquo;
-        </p>
-        {meta && <p className="mt-0.5 text-[10px] text-zinc-500">{meta}</p>}
+        <p className="line-clamp-3 text-xs italic leading-5 text-text-primary">“{quote}”</p>
+        {meta && <p className="mt-1 text-[11px] text-info">{meta}</p>}
       </div>
     </div>
   );
 }
 
-/**
- * Renders whatever citation-worthy shape a finding's evidence jsonb
- * happens to have, driven by which fields are present rather than a
- * per-finding_type switch — every check in lib/audit/*.ts that quotes the
- * source document uses the same {page, original_text} shape, so this stays
- * generic. Policy-derived (coverage_gap) findings have no document quote to
- * cite — they render nothing here, the description already states the
- * extracted number.
- */
 function Evidence({ evidence }: { evidence: Record<string, unknown> | null }) {
   if (!evidence) return null;
 
   if (Array.isArray(evidence.price_observations)) {
     const page = typeof evidence.page === "number" ? evidence.page : null;
     const quote = typeof evidence.original_text === "string" ? evidence.original_text : null;
-    return (
-      <>
-        <MedicinePriceEvidence evidence={evidence} />
-        <div className="mt-2">
-          <Citation page={page} quote={quote} />
-        </div>
-      </>
-    );
+    return <div className="mt-4"><MedicinePriceEvidence evidence={evidence} /><div className="mt-3"><Citation page={page} quote={quote} /></div></div>;
   }
 
   const hospitalPrice = evidence.hospital_price;
   const referencePrice = evidence.reference_price;
-  const hasPriceComparison =
-    typeof hospitalPrice === "number" && typeof referencePrice === "number";
+  const hasPriceComparison = typeof hospitalPrice === "number" && typeof referencePrice === "number";
   const source = typeof evidence.source === "string" ? evidence.source : null;
   const referenceUnit = typeof evidence.reference_unit === "string" ? evidence.reference_unit : null;
-  const potentialSavings =
-    typeof evidence.potential_savings === "number" ? evidence.potential_savings : null;
-
-  const occurrences = Array.isArray(evidence.occurrences)
-    ? (evidence.occurrences as {
-        page?: number | null;
-        original_text?: string | null;
-        quantity?: number | null;
-        total_price?: number | null;
-      }[])
-    : null;
+  const potentialSavings = typeof evidence.potential_savings === "number" ? evidence.potential_savings : null;
+  const occurrences = Array.isArray(evidence.occurrences) ? evidence.occurrences as { page?: number | null; original_text?: string | null; total_price?: number | null }[] : null;
 
   if (occurrences) {
-    return (
-      <div className="mt-3 flex flex-col gap-1.5">
-        {occurrences.map((o, i) => (
-          <Citation
-            key={i}
-            page={o.page}
-            quote={o.original_text}
-            meta={o.total_price != null ? `₹${o.total_price.toLocaleString("en-IN")}` : null}
-          />
-        ))}
-      </div>
-    );
+    return <div className="mt-4 grid gap-2">{occurrences.map((occurrence, i) => <Citation key={i} page={occurrence.page} quote={occurrence.original_text} meta={occurrence.total_price != null ? formatMoney(occurrence.total_price) : null} />)}</div>;
   }
 
   const page = typeof evidence.page === "number" ? evidence.page : null;
   const quote = typeof evidence.original_text === "string" ? evidence.original_text : null;
-
   if (!hasPriceComparison && !quote) return null;
 
   return (
-    <div className="mt-3 flex flex-col gap-2">
+    <div className="mt-4 grid gap-3">
       {hasPriceComparison && (
-        <div className="flex flex-col gap-0.5 text-sm">
-          <span className="font-medium text-zinc-900 dark:text-zinc-100">
-            Hospital price: ₹{(hospitalPrice as number).toLocaleString("en-IN")}
-          </span>
-          <span className="text-zinc-600 dark:text-zinc-400">
-            {source?.startsWith("NPPA ceiling price") ? "NPPA reference" : "Reference"}: ₹
-            {(referencePrice as number).toLocaleString("en-IN")}
-            {referenceUnit ? ` / ${referenceUnit}` : ""}
-          </span>
-          {potentialSavings != null && (
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">
-              Potential price difference: ₹{potentialSavings.toLocaleString("en-IN")}
-            </span>
-          )}
-          {source && <span className="text-[11px] text-zinc-500">{source}</span>}
+        <div className="grid gap-2 rounded-xl border border-warning/20 bg-warning-bg p-4 sm:grid-cols-3">
+          <div><p className="text-xs text-warning/75">Hospital charge</p><p className="mt-1 font-semibold text-text-primary">{formatMoney(hospitalPrice as number)}</p></div>
+          <div><p className="text-xs text-warning/75">{source?.startsWith("NPPA ceiling price") ? "NPPA reference" : "Available reference"}</p><p className="mt-1 font-semibold text-text-primary">{formatMoney(referencePrice as number)}{referenceUnit ? ` / ${referenceUnit}` : ""}</p></div>
+          {potentialSavings != null && <div><p className="text-xs text-warning/75">Potential difference</p><p className="mt-1 font-semibold text-warning">{formatMoney(potentialSavings)}</p></div>}
         </div>
       )}
       <Citation page={page} quote={quote} meta={source} />
@@ -151,48 +77,34 @@ function Evidence({ evidence }: { evidence: Record<string, unknown> | null }) {
   );
 }
 
-export function FindingCard({
-  finding,
-  questions,
-}: {
-  finding: Finding;
-  questions: Question[] | undefined;
-}) {
+export function FindingCard({ finding, questions }: { finding: Finding; questions: Question[] | undefined }) {
+  const tone = findingTone(finding.finding_type, finding.confidence);
+  const hasPotentialSavings = typeof finding.evidence?.potential_savings === "number";
+  const label = finding.finding_type === "medicine_savings" && !hasPotentialSavings
+    ? "Potential price difference"
+    : TYPE_LABELS[finding.finding_type] ?? finding.finding_type;
+
   return (
-    <div className="rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-white/[.02] p-4">
-      <div className="flex items-start justify-between gap-3">
+    <FindingSurface tone={tone}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-medium text-zinc-500">
-            {finding.finding_type === "medicine_savings" && finding.evidence && typeof finding.evidence.potential_savings !== "number"
-              ? "Potential price difference"
-              : TYPE_LABELS[finding.finding_type] ?? finding.finding_type}
-          </p>
-          <p className="mt-0.5 text-sm font-semibold text-black dark:text-zinc-50">
-            {finding.title}
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-text-muted">{label}</p>
+          <h3 className="mt-1 text-lg font-semibold tracking-tight text-text-primary">{finding.title}</h3>
         </div>
-        <ConfidenceBadge confidence={finding.confidence} />
+        <StatusBadge tone={confidenceTone(finding.confidence)}>{confidenceLabel(finding.confidence)}</StatusBadge>
       </div>
 
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{finding.description}</p>
-
+      <p className="mt-3 max-w-3xl text-sm leading-6 text-text-muted">{finding.description}</p>
       <Evidence evidence={finding.evidence} />
 
       {questions && questions.length > 0 && (
-        <div className="mt-3 border-t border-black/5 dark:border-white/10 pt-2.5">
-          <p className="text-xs font-medium text-zinc-500">
-            {finding.finding_type === "coverage_gap" ? "Ask the insurer:" : "Ask the hospital:"}
-          </p>
-          <ul className="mt-1 flex flex-col gap-1">
-            {questions.map((q) => (
-              <li key={q.id} className="text-sm text-zinc-700 dark:text-zinc-300">
-                {q.question_text}
-              </li>
-            ))}
+        <div className="mt-5 border-t border-border pt-4">
+          <div className="flex items-center gap-2"><SourceBadge>{finding.finding_type === "coverage_gap" ? "Ask the insurer" : "Ask the hospital"}</SourceBadge></div>
+          <ul className="mt-3 grid gap-2">
+            {questions.map((question) => <li key={question.id} className="rounded-xl bg-surface/75 px-4 py-3 text-sm leading-6 text-text-primary">{question.question_text}</li>)}
           </ul>
         </div>
       )}
-    </div>
+    </FindingSurface>
   );
 }
-import { MedicinePriceEvidence } from "./medicine-price-evidence";

@@ -1,4 +1,5 @@
 import type { createClient } from "@/lib/supabase/server";
+import type { Tone } from "@/lib/presentation";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -28,6 +29,7 @@ export type RecentCase = {
   workflowLabel: string;
   updatedAt: string;
   statusLabel: string;
+  statusTone: Tone;
   potentialSavings: number;
   actionLabel: "Continue" | "View";
 };
@@ -96,6 +98,7 @@ export async function getRecentCases(
           : findingsCount > 0
             ? `${findingsCount} thing${findingsCount === 1 ? "" : "s"} worth checking`
             : "Ready to review",
+      statusTone: hasErrorDocument ? "danger" : hasProcessingDocument ? "info" : findingsCount > 0 ? "warning" : "success",
       potentialSavings: Number(potentialSavings.toFixed(2)),
       actionLabel: hasProcessingDocument ? "Continue" : "View",
     };
