@@ -1,10 +1,6 @@
-export function CaseSummary({
-  totalBilled,
-  findingsCount,
-  highCount,
-  mediumOrLowCount,
-  potentialSavings,
-}: {
+import { ImpactCard, MoneyValue, StatusBadge, Surface } from "@/components/ui";
+
+export function CaseSummary({ totalBilled, findingsCount, highCount, mediumOrLowCount, potentialSavings }: {
   totalBilled: number;
   findingsCount: number;
   highCount: number;
@@ -12,24 +8,26 @@ export function CaseSummary({
   potentialSavings: number;
 }) {
   return (
-    <div className="rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-white/[.02] p-5">
-      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Total billed</p>
-      <p className="mt-1 text-4xl font-semibold text-black dark:text-zinc-50">
-        ₹{totalBilled.toLocaleString("en-IN")}
-      </p>
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-600 dark:text-zinc-400">
-        <span>
-          {findingsCount} thing{findingsCount === 1 ? "" : "s"} worth checking
-        </span>
-        {highCount > 0 && <span>{highCount} high confidence</span>}
-        {mediumOrLowCount > 0 && <span>{mediumOrLowCount} need clarification</span>}
-      </div>
-      {potentialSavings > 0 && (
-        <p className="mt-3 border-t border-black/5 dark:border-white/10 pt-3 text-sm">
-          <span className="font-medium text-black dark:text-zinc-50">
-            Potential savings to investigate: ₹{potentialSavings.toLocaleString("en-IN")}
-          </span>
-        </p>
+    <div className="grid gap-3 lg:grid-cols-[1fr_1.15fr]">
+      <ImpactCard tone="neutral" label="Total bill or estimate" className="bg-surface">
+        <MoneyValue value={totalBilled} size="lg" className="mt-2 block text-text-primary" />
+        <div className="mt-4 flex flex-wrap gap-2">
+          <StatusBadge tone={findingsCount > 0 ? "warning" : "success"}>{findingsCount > 0 ? `${findingsCount} thing${findingsCount === 1 ? "" : "s"} worth checking` : "Nothing flagged yet"}</StatusBadge>
+          {highCount > 0 && <StatusBadge tone="success">{highCount} verified</StatusBadge>}
+          {mediumOrLowCount > 0 && <StatusBadge tone="warning">{mediumOrLowCount} need clarification</StatusBadge>}
+        </div>
+      </ImpactCard>
+
+      {potentialSavings > 0 ? (
+        <ImpactCard tone="warning" label="Potential savings to investigate" description="Estimated from the available reference price. This does not guarantee that the amount is recoverable or that the hospital charge is unlawful.">
+          <MoneyValue value={potentialSavings} size="lg" className="mt-2 block text-warning" />
+        </ImpactCard>
+      ) : (
+        <Surface tone="info" className="flex flex-col justify-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-info">What happens next</p>
+          <p className="mt-2 text-lg font-semibold text-text-primary">Review each finding with its source page.</p>
+          <p className="mt-1 text-sm leading-6 text-text-muted">MediBud keeps the interpretation close to the evidence so you can decide what to ask.</p>
+        </Surface>
       )}
     </div>
   );

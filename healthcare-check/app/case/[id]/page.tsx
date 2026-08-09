@@ -1,17 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
-import { LogoutButton } from "@/components/logout-button";
 import { UploadDocument } from "@/components/upload-document";
 import { DocumentCard } from "@/components/document-card";
 import { CaseSummary } from "@/components/case-summary";
 import { CoverageSummary } from "@/components/coverage-summary";
 import { FindingCard } from "@/components/finding-card";
-import { RunAuditButton } from "@/components/run-audit-button";
+import { ReviewWorkspaceHeader } from "@/components/run-audit-button";
 import { EditableCaseTitle } from "@/components/editable-case-title";
 import { AskPolicy } from "@/components/ask-policy";
 import { CompareEstimate } from "@/components/compare-estimate";
+import { QuestionsChecklist, type ChecklistItem } from "@/components/questions-checklist";
+import { AppShell, BackLink } from "@/components/app-shell";
+import { EmptyState, SectionHeader, StatusBadge } from "@/components/ui";
 import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
-import type { ReactNode } from "react";
 
 type InsurancePolicySummary = {
   id: string;
@@ -30,178 +30,96 @@ type InsurancePolicySummary = {
 
 const CONFIDENCE_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
-function SectionLabel({ children }: { children: ReactNode }) {
-  return (
-    <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{children}</p>
-  );
-}
-
-export default async function CasePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function CasePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
+  if (!auth?.claims) redirect("/login");
 
-  if (!auth?.claims) {
-    redirect("/login");
-  }
+  const { data: caseRow } = await supabase.from("cases").select("id, title, status, created_at").eq("id", id).single();
+  if (!caseRow) notFound();
 
-  const { data: caseRow } = await supabase
-    .from("cases")
-    .select("id, title, status, created_at")
-    .eq("id", id)
-    .single();
+  const { data: documents } = await supabase.from("documents").select("id, doc_type, original_filename, mime_type, page_count, status, created_at").eq("case_id", id).is("deleted_at", null).order("created_at", { ascending: false });
+  const { data: findings } = await supabase.from("audit_findings").select("id, finding_type, title, description, confidence, evidence, created_at").eq("case_id", id).order("created_at", { ascending: false });
+  const sortedFindings = [...(findings ?? [])].sort((a, b) => (CONFIDENCE_RANK[a.confidence] ?? 3) - (CONFIDENCE_RANK[b.confidence] ?? 3));
+  const { data: questions } = await supabase.from("questions").select("id, finding_id, question_text").eq("case_id", id).order("created_at", { ascending: true });
 
-  if (!caseRow) {
-    notFound();
-  }
-
-  const { data: documents } = await supabase
-    .from("documents")
-    .select("id, doc_type, original_filename, mime_type, page_count, status, created_at")
-    .eq("case_id", id)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
-
-  const { data: findings } = await supabase
-    .from("audit_findings")
-    .select("id, finding_type, title, description, confidence, evidence, created_at")
-    .eq("case_id", id)
-    .order("created_at", { ascending: false });
-
-  const sortedFindings = [...(findings ?? [])].sort(
-    (a, b) => (CONFIDENCE_RANK[a.confidence] ?? 3) - (CONFIDENCE_RANK[b.confidence] ?? 3),
-  );
-
-  const { data: questions } = await supabase
-    .from("questions")
-    .select("id, finding_id, question_text")
-    .eq("case_id", id)
-    .order("created_at", { ascending: true });
-
-  const documentIds = (documents ?? []).map((d) => d.id);
-  const { data: items } = documentIds.length
-    ? await supabase.from("extracted_items").select("total_price").in("document_id", documentIds)
-    : { data: [] as { total_price: number | null }[] };
-
-  const { data: rawPolicies } = documentIds.length
-    ? await supabase
-        .from("insurance_policies")
-        .select(
-          "id, document_id, sum_insured, room_rent_limit, icu_limit, copay_percent, deductible, waiting_periods, sub_limits, exclusions, consumables_covered, other_conditions",
-        )
-        .in("document_id", documentIds)
-    : { data: [] };
+  const documentIds = (documents ?? []).map((document) => document.id);
+  const { data: items } = documentIds.length ? await supabase.from("extracted_items").select("total_price").in("document_id", documentIds) : { data: [] as { total_price: number | null }[] };
+  const { data: rawPolicies } = documentIds.length ? await supabase.from("insurance_policies").select("id, document_id, sum_insured, room_rent_limit, icu_limit, copay_percent, deductible, waiting_periods, sub_limits, exclusions, consumables_covered, other_conditions").in("document_id", documentIds) : { data: [] };
   const policies = (rawPolicies ?? []) as InsurancePolicySummary[];
 
-  const totalBilled = (items ?? []).reduce((sum, i) => sum + (i.total_price ?? 0), 0);
-  const highCount = (findings ?? []).filter((f) => f.confidence === "high").length;
-  const mediumOrLowCount = (findings ?? []).filter((f) => f.confidence !== "high").length;
-  const potentialSavings = (findings ?? [])
-    .filter((f) => f.finding_type === "medicine_savings")
-    .reduce((sum, f) => {
-      const evidence = f.evidence as { potential_savings?: unknown } | null;
-      return sum + (typeof evidence?.potential_savings === "number" ? evidence.potential_savings : 0);
-    }, 0);
-  const generalQuestions = (questions ?? []).filter((q) => !q.finding_id);
+  const totalBilled = (items ?? []).reduce((sum, item) => sum + (item.total_price ?? 0), 0);
+  const highCount = (findings ?? []).filter((finding) => finding.confidence === "high").length;
+  const mediumOrLowCount = (findings ?? []).filter((finding) => finding.confidence !== "high").length;
+  const potentialSavings = (findings ?? []).filter((finding) => finding.finding_type === "medicine_savings").reduce((sum, finding) => {
+    const evidence = finding.evidence as { potential_savings?: unknown } | null;
+    return sum + (typeof evidence?.potential_savings === "number" ? evidence.potential_savings : 0);
+  }, 0);
   const questionsByFinding = new Map<string, NonNullable<typeof questions>>();
-  for (const q of questions ?? []) {
-    if (!q.finding_id) continue;
-    const list = questionsByFinding.get(q.finding_id) ?? [];
-    list.push(q);
-    questionsByFinding.set(q.finding_id, list);
+  for (const question of questions ?? []) {
+    if (!question.finding_id) continue;
+    const list = questionsByFinding.get(question.finding_id) ?? [];
+    list.push(question);
+    questionsByFinding.set(question.finding_id, list);
   }
+  const hasHospitalDocument = (documents ?? []).some((document) =>
+    ["bill", "estimate", "quotation", "prescription"].includes(document.doc_type ?? ""),
+  );
+  const findingById = new Map((findings ?? []).map((finding) => [finding.id, finding]));
+  const questionMap = new Map<string, ChecklistItem>();
+  for (const question of questions ?? []) {
+    const finding = question.finding_id ? findingById.get(question.finding_id) : null;
+    const audience = finding?.finding_type === "coverage_gap" || (!finding && !hasHospitalDocument) ? "insurer" : "hospital";
+    questionMap.set(question.question_text.trim().toLowerCase(), {
+      id: question.id,
+      question: question.question_text,
+      context: finding?.title ?? "General review",
+      audience,
+    });
+  }
+  const questionChecklist = Array.from(questionMap.values());
+
+  const statusTone = caseRow.status === "error" ? "danger" : caseRow.status === "ready" ? "success" : "info";
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
-      <nav className="flex items-center justify-between border-b border-black/10 dark:border-white/10 px-6 py-4">
-        <Link href="/dashboard" className="font-semibold text-black dark:text-zinc-50">
-          Healthcare Check
-        </Link>
-        <LogoutButton />
-      </nav>
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <Link href="/dashboard" className="text-sm text-zinc-500 hover:underline">
-          &larr; Back to cases
-        </Link>
-        <EditableCaseTitle caseId={id} title={caseRow.title} />
-
-        <section className="mt-8 flex flex-col gap-3">
-          <UploadDocument caseId={id} />
-          {documents && documents.length > 0 && (
-            <div className="flex flex-col gap-3">
-              {documents.map((doc) => (
-                <DocumentCard key={doc.id} doc={doc} />
-              ))}
-            </div>
-          )}
+    <AppShell context="Case review">
+      <main className="page-shell">
+        <BackLink />
+        <section className="mt-7 flex flex-col gap-4 border-b border-border pb-7 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-info">Case review</p><EditableCaseTitle caseId={id} title={caseRow.title} /><p className="mt-2 text-sm text-text-muted">Your documents, findings, evidence, and next questions in one place.</p></div>
+          <StatusBadge tone={statusTone}>{caseRow.status === "ready" ? "Ready to review" : caseRow.status === "error" ? "Needs attention" : "In progress"}</StatusBadge>
         </section>
 
-        {items && items.length > 0 && (
-          <section className="mt-10 flex flex-col gap-3">
-            <SectionLabel>Summary</SectionLabel>
-            <CaseSummary
-              totalBilled={totalBilled}
-              findingsCount={(findings ?? []).length}
-              highCount={highCount}
-              mediumOrLowCount={mediumOrLowCount}
-              potentialSavings={potentialSavings}
-            />
-          </section>
-        )}
+        <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_19rem]">
+          <div className="min-w-0">
+            <section aria-labelledby="documents-heading">
+              <SectionHeader eyebrow="Documents" title="Add or review your documents" description="Upload a bill, estimate, policy, or supporting page. MediBud keeps the source close to the result." />
+              <div className="mt-5 grid gap-3"><UploadDocument caseId={id} />{documents && documents.length > 0 && documents.map((document) => <DocumentCard key={document.id} doc={document} />)}</div>
+            </section>
 
-        {policies.length > 0 && (
-          <section className="mt-10 flex flex-col gap-3">
-            <SectionLabel>Insurance</SectionLabel>
-            {policies.map((policy) => (
-              <CoverageSummary key={policy.id} policy={policy} />
-            ))}
-            <AskPolicy caseId={id} />
-            {(items ?? []).length > 0 && <CompareEstimate caseId={id} />}
-          </section>
-        )}
+            {items && items.length > 0 && <section className="mt-12" aria-labelledby="summary-heading"><SectionHeader eyebrow="At a glance" title="What the documents show" /><div className="mt-5"><CaseSummary totalBilled={totalBilled} findingsCount={(findings ?? []).length} highCount={highCount} mediumOrLowCount={mediumOrLowCount} potentialSavings={potentialSavings} /></div></section>}
 
-        <section className="mt-10 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <SectionLabel>Findings</SectionLabel>
-            <RunAuditButton caseId={id} />
+            {policies.length > 0 && <section className="mt-12" aria-labelledby="insurance-heading"><SectionHeader eyebrow="Insurance" title="What your policy says" description="Important limits and conditions are shown with the language of your policy in mind." /><div className="mt-5 grid gap-4">{policies.map((policy) => <CoverageSummary key={policy.id} policy={policy} />)}<AskPolicy caseId={id} />{(items ?? []).length > 0 && <CompareEstimate caseId={id} />}</div></section>}
+
+            <section className="mt-12" aria-labelledby="findings-heading">
+              <ReviewWorkspaceHeader caseId={id} />
+              <div className="mt-8">
+                <SectionHeader
+                  eyebrow="Findings"
+                  title="Findings"
+                  action={<p className="text-sm font-medium text-info sm:whitespace-nowrap">{(findings ?? []).length} finding{(findings ?? []).length === 1 ? "" : "s"} · {(questions ?? []).length} question{(questions ?? []).length === 1 ? "" : "s"}</p>}
+                />
+              </div>
+              <div className="mt-5 grid gap-3">{!findings || findings.length === 0 ? <EmptyState title="No findings yet" description="Upload a hospital document, then review charges to prepare the evidence-backed findings." /> : sortedFindings.map((finding) => <FindingCard key={finding.id} finding={finding} questions={questionsByFinding.get(finding.id)} />)}</div>
+            </section>
           </div>
 
-          {!findings || findings.length === 0 ? (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              No findings yet. Run the audit after uploading a hospital document.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {sortedFindings.map((finding) => (
-                <FindingCard
-                  key={finding.id}
-                  finding={finding}
-                  questions={questionsByFinding.get(finding.id)}
-                />
-              ))}
-            </div>
-          )}
-
-          {generalQuestions.length > 0 && (
-            <div className="rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-white/[.02] p-4">
-              <p className="text-sm font-medium text-black dark:text-zinc-50">
-                Other questions to ask
-              </p>
-              <ul className="mt-1 flex flex-col gap-1">
-                {generalQuestions.map((q) => (
-                  <li key={q.id} className="text-sm text-zinc-700 dark:text-zinc-300">
-                    {q.question_text}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
+          <aside className="h-fit lg:sticky lg:top-24">
+            {questionChecklist.length > 0 ? <QuestionsChecklist items={questionChecklist} /> : <div className="rounded-[1rem] border border-border bg-surface p-5"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">Review guide</p><ol className="mt-4 grid gap-3 text-sm text-text-muted"><li><span className="font-semibold text-text-primary">1.</span> Add the document that matters most.</li><li><span className="font-semibold text-text-primary">2.</span> Start with the summary and amounts.</li><li><span className="font-semibold text-text-primary">3.</span> Open evidence for anything unclear.</li><li><span className="font-semibold text-text-primary">4.</span> Take the suggested question with you.</li></ol></div>}
+          </aside>
+        </div>
       </main>
-    </div>
+    </AppShell>
   );
 }

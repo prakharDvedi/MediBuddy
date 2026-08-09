@@ -1,3 +1,6 @@
+import { Brand } from "@/components/app-shell";
+import { ErrorState } from "@/components/ui";
+
 export default async function AuthErrorPage({
   searchParams,
 }: {
@@ -6,14 +9,13 @@ export default async function AuthErrorPage({
   const params = await searchParams;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black px-4">
-      <div className="w-full max-w-sm rounded-lg border border-black/10 dark:border-white/10 p-6 text-center">
-        <h2 className="mb-2 text-lg font-medium text-black dark:text-zinc-50">
-          Authentication error
-        </h2>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          {params.error ?? "An unspecified error occurred."}
-        </p>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 flex justify-center"><Brand variant="full" /></div>
+        <div className="surface p-6 text-center">
+          <h1 className="mb-4 text-2xl font-semibold tracking-tight text-text-primary">Authentication error</h1>
+          <ErrorState message={params.error ?? "An unspecified error occurred."} />
+        </div>
       </div>
     </div>
   );

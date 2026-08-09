@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useState } from "react";
+import { Brand } from "@/components/app-shell";
+import { ErrorState } from "@/components/ui";
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
@@ -37,12 +39,13 @@ export default function SignUpPage() {
 
   if (submitted) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black px-4">
-        <div className="w-full max-w-sm rounded-lg border border-black/10 dark:border-white/10 p-6 text-center">
-          <h2 className="mb-2 text-lg font-medium text-black dark:text-zinc-50">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+        <div className="surface w-full max-w-sm p-6 text-center sm:p-7">
+          <div className="mb-7 flex justify-center"><Brand variant="full" /></div>
+          <h1 className="mb-2 text-2xl font-semibold tracking-tight text-text-primary">
             Check your email
-          </h2>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          </h1>
+          <p className="text-sm leading-6 text-text-muted">
             We sent a confirmation link to {email}. Confirm your address to
             finish creating your account.
           </p>
@@ -52,20 +55,18 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-sm">
-        <h1 className="mb-6 text-center text-2xl font-semibold text-black dark:text-zinc-50">
-          Healthcare Check
-        </h1>
+        <div className="mb-8 flex justify-center"><Brand variant="full" /></div>
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col gap-4 rounded-lg border border-black/10 dark:border-white/10 p-6"
+          className="surface flex flex-col gap-4 p-6 sm:p-7"
         >
-          <h2 className="text-lg font-medium text-black dark:text-zinc-50">
+          <div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-info">A calmer way to review</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-text-primary">
             Sign up
-          </h2>
+          </h1><p className="mt-2 text-sm leading-6 text-text-muted">Create a private workspace for your hospital bills and insurance questions.</p></div>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-sm">
+            <label htmlFor="email" className="text-sm font-medium text-text-primary">
               Email
             </label>
             <input
@@ -74,11 +75,11 @@ export default function SignUpPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded border border-black/15 dark:border-white/15 bg-transparent px-3 py-2 text-sm"
+              className="focus-ring min-h-11 rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-text-primary"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="password" className="text-sm">
+            <label htmlFor="password" className="text-sm font-medium text-text-primary">
               Password
             </label>
             <input
@@ -88,20 +89,20 @@ export default function SignUpPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="rounded border border-black/15 dark:border-white/15 bg-transparent px-3 py-2 text-sm"
+              className="focus-ring min-h-11 rounded-xl border border-border bg-surface-elevated px-3 py-2 text-sm text-text-primary"
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <ErrorState message={error} />}
           <button
             type="submit"
             disabled={loading}
-            className="rounded bg-black dark:bg-white text-white dark:text-black px-4 py-2 text-sm font-medium disabled:opacity-50"
+            className="focus-ring min-h-11 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50"
           >
             {loading ? "Signing up..." : "Sign up"}
           </button>
-          <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-center text-sm text-text-muted">
             Already have an account?{" "}
-            <Link href="/login" className="underline">
+            <Link href="/login" className="font-medium text-info underline underline-offset-4">
               Log in
             </Link>
           </p>

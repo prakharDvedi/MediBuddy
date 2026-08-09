@@ -1,26 +1,135 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f4ec;
+  --surface: #fffdf8;
+  --surface-elevated: #ffffff;
+  --text-primary: #172b3a;
+  --text-muted: #5f6c73;
+  --border: #d8e0db;
+  --border-strong: #b8c8c0;
+  --primary: #173a55;
+  --primary-hover: #102c46;
+  --info-bg: #e8f2f7;
+  --info: #2e6e93;
+  --success-bg: #e5f1e8;
+  --success: #2d7357;
+  --warning-bg: #fff3c9;
+  --warning: #946200;
+  --danger-bg: #fbe5de;
+  --danger: #a34c3d;
+  --soft-canvas: #eef4ef;
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-text-primary: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-info-bg: var(--info-bg);
+  --color-info: var(--info);
+  --color-success-bg: var(--success-bg);
+  --color-success: var(--success);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning: var(--warning);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger: var(--danger);
+  --color-soft-canvas: var(--soft-canvas);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+body {
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: var(--success-bg);
+  color: var(--text-primary);
+}
+
+@layer components {
+  .page-shell {
+    width: calc(100% - 2rem);
+    max-width: 72rem;
+    margin-inline: auto;
+    padding-block: 2rem 4rem;
+  }
+
+  .page-shell-narrow {
+    width: calc(100% - 2rem);
+    max-width: 58rem;
+    margin-inline: auto;
+    padding-block: 2rem 4rem;
+  }
+
+  .content-width {
+    width: calc(100% - 2rem);
+    max-width: 72rem;
+    min-width: 0;
+    margin-inline: auto;
+  }
+
+  .surface {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 0.875rem;
+    box-shadow: 0 10px 30px rgb(23 43 58 / 0.035);
+  }
+
+  .surface-elevated {
+    border: 1px solid var(--border);
+    background: var(--surface-elevated);
+    border-radius: 0.875rem;
+    box-shadow: 0 14px 38px rgb(23 43 58 / 0.08);
+  }
+
+  .impact-card {
+    border-radius: 1rem;
+    box-shadow: 0 14px 34px rgb(23 43 58 / 0.07);
+  }
+
+  .focus-ring:focus-visible,
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible {
+    outline: 3px solid rgb(46 110 147 / 0.38);
+    outline-offset: 2px;
+  }
+
+  .soft-grid {
+    background-image: linear-gradient(rgb(23 43 58 / 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(23 43 58 / 0.035) 1px, transparent 1px);
+    background-size: 28px 28px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@media (min-width: 640px) {
+  .page-shell,
+  .page-shell-narrow {
+    width: calc(100% - 3rem);
+  }
+
+  .page-shell-narrow {
+    max-width: 58rem;
+  }
+
+  .content-width {
+    width: calc(100% - 3rem);
+  }
 }
