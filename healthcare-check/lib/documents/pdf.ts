@@ -12,6 +12,13 @@ export type ExtractedPage = {
  * callers should flag those as low confidence rather than guessing.
  */
 export async function extractPdfPages(buffer: Buffer): Promise<ExtractedPage[]> {
+  const pdfGlobals = globalThis as Record<string, unknown>;
+  if (!pdfGlobals.DOMMatrix || !pdfGlobals.Path2D) {
+    const canvas = await import("@napi-rs/canvas");
+    pdfGlobals.DOMMatrix ??= canvas.DOMMatrix;
+    pdfGlobals.Path2D ??= canvas.Path2D;
+  }
+
   const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
 
   // pdf.js needs a real worker script path even when running "workerless"
