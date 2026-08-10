@@ -17,7 +17,7 @@ export function ImpactCard({ tone = "neutral", label, value, description, childr
 }
 
 export function StatusBadge({ tone = "neutral", children }: { tone?: Tone; children: ReactNode }) {
-  return <span className={cn("inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium", TONE_CLASSES[tone])}>{children}</span>;
+  return <span className={cn("inline-flex shrink-0 items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium", TONE_CLASSES[tone])}>{children}</span>;
 }
 
 export function SourceBadge({ children = "Source" }: { children?: ReactNode }) { return <StatusBadge tone="info">{children}</StatusBadge>; }
