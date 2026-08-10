@@ -32,6 +32,57 @@ When both documents are available, MedBud estimates:
 
 The calculations are performed deterministically in code. AI is used to understand documents and explain results.
 
+## Engineering decisions
+
+MedBud uses different approaches depending on the type of problem rather than using AI for every step.
+
+### Structured references instead of AI-generated prices
+
+Medicine and procedure prices are treated as structured data.
+
+NPPA, PMBI / Jan Aushadhi, and CGHS reference data is parsed, normalized, validated, and stored in Postgres. Audits query these records directly instead of asking an LLM to estimate what something should cost.
+
+Reference imports are versioned so older observations are retained when official rates change.
+
+### Deterministic matching and calculations
+
+AI is used for document understanding, but it does not make the final pricing or insurance decision.
+
+Medicine identity, units, reference matching, duplicate checks, price differences, deductibles, co-pay, and insurance calculations are handled in code.
+
+Exact structured matches are preferred. Fuzzy matching can surface possible candidates, but uncertain matches require review rather than automatically producing a comparison.
+
+### Policy retrieval
+
+Insurance policies can be large, so MedBud does not send the complete document to the model for every question.
+
+Policies are split into page and section-aware chunks and stored for retrieval. PostgreSQL full-text search selects relevant chunks for a question, and only that context is provided to the model.
+
+This keeps policy answers smaller, grounded in the uploaded document, and able to cite the relevant pages.
+
+### Large document processing
+
+Large documents are processed in bounded chunks rather than as one model request.
+
+Chunk results are merged into a structured policy summary while preserving page and section information. Conflicting information is not silently resolved when the system cannot determine which value applies.
+
+### Evidence lineage
+
+Important findings retain the path used to produce them:
+
+document → page → extracted item → normalized entity → reference observation → rule/calculation → finding
+
+This allows the UI to explain why something was flagged instead of presenting an unsupported AI conclusion.
+
+### Reference ingestion
+
+Official reference data follows a small ingestion pipeline:
+
+source document → parsing → normalization → validation → versioned snapshot → Postgres
+
+Accepted snapshots are used by the audit engine while older snapshots remain available for history and reproducibility.
+
+
 ## Stack
 
 - Next.js 16
@@ -41,8 +92,6 @@ The calculations are performed deterministically in code. AI is used to understa
 - Groq
 - PostgreSQL full-text search
 - Docker
-
-The project is a single Next.js application. There is no separate backend service.
 
 ## Run locally
 
