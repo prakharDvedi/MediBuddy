@@ -13,7 +13,7 @@ export function Brand({ href = "/", variant = "compact" }: { href?: string; vari
 }
 
 export function PublicHeader() {
-  return <header className="relative z-10 border-b border-border/80 bg-background/90 backdrop-blur"><div className="content-width flex min-h-16 items-center justify-between gap-4"><Brand variant="full" /><nav className="flex items-center gap-2 text-sm"><Link href="/login" className="focus-ring rounded-xl bg-primary px-3.5 py-2 text-white hover:bg-primary-hover">Log in</Link></nav></div></header>;
+  return <header className="relative z-10 border-b border-border/80 bg-background/90 backdrop-blur"><div className="content-width flex min-h-16 items-center justify-between gap-4"><Brand variant="full" /><nav className="flex items-center gap-4 text-sm"><Link href="/login" className="focus-ring rounded-lg text-text-primary hover:text-primary">Log in</Link><Link href="/signup" className="focus-ring inline-flex items-center rounded-xl bg-primary px-3.5 py-2 text-white hover:bg-primary-hover">Sign up</Link></nav></div></header>;
 }
 
 export function AppShell({ children, email, context }: { children: ReactNode; email?: string; context?: string }) {

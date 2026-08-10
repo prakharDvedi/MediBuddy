@@ -65,6 +65,66 @@ The calculation is deterministic. The language model explains results but does n
 
 The project runs as a single Next.js application. There is no separate backend service.
 
+## Run locally
+
+### Prerequisites
+
+- Node.js 22.x
+- A Supabase project, or Docker plus the Supabase CLI for a local Supabase instance
+- A Groq API key
+
+### Configure the environment
+
+Create `healthcare-check/.env.local` with the following values:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+SUPABASE_DB_URL=your-supabase-database-url
+GROQ_API_KEY=your-groq-api-key
+```
+
+Create a private Supabase Storage bucket named `documents`. The application uses this bucket for uploaded bills and policies.
+
+### Apply the database schema
+
+From the repository root, link the Supabase CLI to a hosted project and apply the migrations:
+
+```bash
+npx supabase link --project-ref your-project-ref
+npx supabase db push
+```
+
+For a local Supabase instance, start Supabase and reset the database so migrations and the demo seed data are applied:
+
+```bash
+npx supabase start
+npx supabase db reset
+```
+
+Use the URLs and keys printed by `npx supabase status` in `.env.local` when running against local Supabase.
+
+### Install and start the app
+
+```bash
+cd healthcare-check
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in a browser.
+
+### Run with Docker Compose
+
+Alternatively, keep the environment variables in a `.env` file at the repository root and run:
+
+```bash
+docker compose up
+```
+
+Docker Compose installs dependencies and starts the Next.js development server on port 3000.
+
 ## Data flow
 
 ```text
@@ -379,25 +439,6 @@ This keeps the MVP simple and avoids unnecessary infrastructure.
 Supabase Storage already supports the current private upload model.
 
 S3 becomes more useful later if the product needs larger-scale object storage, event-driven processing, more advanced lifecycle policies, or deeper cloud infrastructure controls.
-
-## Known limitations
-
-MedBud is still an MVP.
-
-Current limitations include:
-
-- medicine reference coverage is not exhaustive
-- CGHS coverage is intentionally narrow
-- procedure matching is less mature than medicine matching
-- scanned or low-quality documents can still extract incorrectly
-- policy retrieval currently uses lexical full-text search rather than hybrid retrieval
-- insurance calculations are estimates and do not represent final insurer adjudication
-- reference-source refresh is versioned but still manually triggered
-- there is no human correction interface for extracted fields yet
-- processing is request-driven rather than handled by background workers
-- the evaluation corpus is still small compared with real production document diversity
-
-When the available evidence is insufficient, the system prefers an unresolved or unverified result over a confident guess.
 
 ## Future targets
 
