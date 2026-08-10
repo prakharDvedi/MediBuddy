@@ -19,6 +19,7 @@
     "ingest:reference": "node --experimental-strip-types scripts/ingest-reference.ts"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^1.0.5",
     "@supabase/ssr": "0.12.4",
     "@supabase/supabase-js": "2.112.2",
     "next": "16.3.0",

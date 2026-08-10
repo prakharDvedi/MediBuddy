@@ -1,4 +1,5 @@
 import path from "path";
+import { pathToFileURL } from "url";
 
 export type ExtractedPage = {
   pageNumber: number;
@@ -17,10 +18,9 @@ export async function extractPdfPages(buffer: Buffer): Promise<ExtractedPage[]> 
   // in Node. Built as a plain path string (not require.resolve) so webpack
   // never tries to statically analyze a require() of an ESM file — pdf.js
   // dynamically imports this path itself at actual runtime.
-  pdfjsLib.GlobalWorkerOptions.workerSrc = path.join(
-    process.cwd(),
-    "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
-  );
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pathToFileURL(
+    path.join(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"),
+  ).href;
 
   const doc = await pdfjsLib.getDocument({
     data: new Uint8Array(buffer),
