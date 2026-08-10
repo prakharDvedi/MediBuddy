@@ -1,8 +1,12 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
+import {
+  resendSignupConfirmation,
+  signUpWithEmail,
+} from "@/app/signup/actions";
 import Link from "next/link";
 import { useState } from "react";
+import { useEffect } from "react";
 import { Brand } from "@/components/app-shell";
 import { ErrorState } from "@/components/ui";
 
@@ -12,29 +16,56 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendError, setResendError] = useState<string | null>(null);
+  const [resendNotice, setResendNotice] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown === 0) return;
+
+    const timer = window.setInterval(() => {
+      setResendCooldown((current) => (current <= 1 ? 0 : current - 1));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/confirm`,
-      },
-    });
+    const result = await signUpWithEmail(email, password);
 
     setLoading(false);
 
-    if (error) {
-      setError(error.message);
+    if (result.status === "error") {
+      setError(result.error);
       return;
     }
 
     setSubmitted(true);
+  }
+
+  async function handleResend() {
+    if (resendLoading || resendCooldown > 0) return;
+
+    setResendLoading(true);
+    setResendError(null);
+    setResendNotice(null);
+
+    const result = await resendSignupConfirmation(email);
+
+    setResendLoading(false);
+
+    if (result.error) {
+      setResendError(result.error);
+      return;
+    }
+
+    setResendNotice("If this address can receive mail, a new confirmation link was requested.");
+    setResendCooldown(60);
   }
 
   if (submitted) {
@@ -46,9 +77,34 @@ export default function SignUpPage() {
             Check your email
           </h1>
           <p className="text-sm leading-6 text-text-muted">
-            We sent a confirmation link to {email}. Confirm your address to
-            finish creating your account.
+            If this address can receive mail, you&apos;ll receive a confirmation
+            link at {email}. Check your spam folder too. If you already have
+            an account, log in instead.
           </p>
+          <div className="mt-5 flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resendLoading || resendCooldown > 0}
+              className="focus-ring min-h-11 rounded-xl border border-border-strong px-4 py-2 text-sm font-medium text-text-primary hover:bg-surface-elevated disabled:opacity-50"
+            >
+              {resendLoading
+                ? "Requesting link..."
+                : resendCooldown > 0
+                  ? `Try again in ${resendCooldown}s`
+                  : "Resend confirmation email"}
+            </button>
+            <Link
+              href="/login"
+              className="focus-ring rounded-lg text-center text-sm font-medium text-info underline underline-offset-4"
+            >
+              Log in instead
+            </Link>
+          </div>
+          {resendNotice && (
+            <p className="mt-4 text-sm text-success">{resendNotice}</p>
+          )}
+          {resendError && <div className="mt-4"><ErrorState message={resendError} /></div>}
         </div>
       </div>
     );
