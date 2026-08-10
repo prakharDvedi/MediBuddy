@@ -1,4 +1,4 @@
-# MedBud
+# [MedBud](https://www.medbud.space/)
 
 MedBud is a healthcare transparency app that helps people understand hospital bills, medicine prices, procedures, and insurance policies.
 
