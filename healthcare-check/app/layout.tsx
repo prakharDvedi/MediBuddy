@@ -51,7 +51,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
 
   return (
     <html
-      lang={initialLocale}
+      lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col"><LocaleProvider initialLocale={initialLocale}>{children}</LocaleProvider></body>

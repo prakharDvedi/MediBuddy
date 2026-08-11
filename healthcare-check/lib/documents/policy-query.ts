@@ -1,5 +1,6 @@
 const GROQ_POLICY_QUERY_MODEL = "openai/gpt-oss-20b";
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+export const POLICY_REWRITE_TIMEOUT_MS = 4000;
 const MAX_RETRIEVAL_QUERY_LENGTH = 180;
 const MAX_RETRIEVAL_QUERY_WORDS = 12;
 
@@ -57,9 +58,15 @@ export function normalizePolicyRetrievalQuery(candidate: unknown, originalQuesti
  * Produces retrieval-only terms. This call never translates or replaces the
  * original question used later by grounded answer generation.
  */
-export async function rewritePolicyQuestion(question: string): Promise<string> {
+export async function rewritePolicyQuestion(
+  question: string,
+  timeoutMs = POLICY_REWRITE_TIMEOUT_MS,
+): Promise<string> {
   const originalQuestion = collapseWhitespace(question);
   if (!originalQuestion) return "";
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(GROQ_URL, {
@@ -85,6 +92,7 @@ export async function rewritePolicyQuestion(question: string): Promise<string> {
           },
         },
       }),
+      signal: controller.signal,
     });
 
     if (!response.ok) return originalQuestion;
@@ -94,5 +102,7 @@ export async function rewritePolicyQuestion(question: string): Promise<string> {
     return normalizePolicyRetrievalQuery(parsed.search_terms, originalQuestion);
   } catch {
     return originalQuestion;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }

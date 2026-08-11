@@ -27,8 +27,7 @@ type FindingRow = {
 export type RecentCase = {
   id: string;
   title: string;
-  workflowLabel: string;
-  workflowKey: string;
+  workflowKey: WorkflowKey;
   updatedAt: string;
   statusLabel: string;
   statusKey: "attention" | "processing" | "findings" | "ready";
@@ -38,6 +37,17 @@ export type RecentCase = {
   actionLabel: "Continue" | "View";
   actionKey: "continue" | "view";
 };
+
+export type WorkflowKey =
+  | "billAndPolicy"
+  | "insurancePolicy"
+  | "hospitalBill"
+  | "hospitalEstimate"
+  | "procedureQuote"
+  | "prescription"
+  | "insuranceApproval"
+  | "healthcareDocument"
+  | "noDocument";
 
 export async function getRecentCases(
   supabase: SupabaseServerClient,
@@ -88,9 +98,8 @@ export async function getRecentCases(
     return {
       id: caseRow.id,
       title: caseRow.title,
-      workflowLabel: getWorkflowLabel(caseDocuments),
       updatedAt: latestDocument?.created_at ?? caseRow.created_at,
-      workflowKey: getWorkflowLabel(caseDocuments),
+      workflowKey: getWorkflowKey(caseDocuments),
       statusLabel: hasErrorDocument
         ? "Needs attention"
         : hasProcessingDocument
@@ -123,17 +132,17 @@ function compareDates(a: { created_at: string }, b: { created_at: string }) {
   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 }
 
-function getWorkflowLabel(documents: DocumentRow[]) {
+function getWorkflowKey(documents: DocumentRow[]): WorkflowKey {
   const types = new Set(documents.map((document) => document.doc_type));
   const hasPolicy = types.has("policy");
   const hasHospitalDocument = ["bill", "estimate", "quotation"].some((type) => types.has(type));
 
-  if (hasPolicy && hasHospitalDocument) return "Bill + insurance policy";
-  if (hasPolicy) return "Insurance policy";
-  if (types.has("bill")) return "Hospital bill";
-  if (types.has("estimate")) return "Hospital estimate";
-  if (types.has("quotation")) return "Procedure quote";
-  if (types.has("prescription")) return "Prescription";
-  if (types.has("approval")) return "Insurance approval";
-  return documents.length > 0 ? "Healthcare document" : "No document yet";
+  if (hasPolicy && hasHospitalDocument) return "billAndPolicy";
+  if (hasPolicy) return "insurancePolicy";
+  if (types.has("bill")) return "hospitalBill";
+  if (types.has("estimate")) return "hospitalEstimate";
+  if (types.has("quotation")) return "procedureQuote";
+  if (types.has("prescription")) return "prescription";
+  if (types.has("approval")) return "insuranceApproval";
+  return documents.length > 0 ? "healthcareDocument" : "noDocument";
 }

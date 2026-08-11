@@ -10,6 +10,18 @@ import { normalizeLocale, SUPPORTED_LOCALES } from "../lib/i18n/types.ts";
 import { APP_COPY } from "../lib/i18n/app-copy.ts";
 import type { ExtractedPolicy } from "../lib/documents/policy.ts";
 
+const WORKFLOW_KEYS = [
+  "billAndPolicy",
+  "insurancePolicy",
+  "hospitalBill",
+  "hospitalEstimate",
+  "procedureQuote",
+  "prescription",
+  "insuranceApproval",
+  "healthcareDocument",
+  "noDocument",
+] as const;
+
 function policy(overrides: Partial<ExtractedPolicy> = {}): ExtractedPolicy {
   return {
     sumInsured: null,
@@ -152,6 +164,21 @@ test("policy retrieval rewrite returns compact terms and preserves the original 
   }
 });
 
+test("policy retrieval rewrite falls back when the provider exceeds its timeout", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalQuestion = "Meri policy mein room rent ka limit kya hai?";
+
+  try {
+    globalThis.fetch = async (_input, init) => new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
+    });
+
+    assert.equal(await rewritePolicyQuestion(originalQuestion, 1), originalQuestion);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("policy answer request keeps answer language separate from retrieval input", async () => {
   const originalFetch = globalThis.fetch;
   let requestBody: Record<string, unknown> | null = null;
@@ -227,5 +254,8 @@ test("app copy covers the global shell and primary user flows in every locale", 
     assert.equal(Object.keys(copy.home.intents).length, 3);
     assert.equal(copy.upload.standardStages.length, 3);
     assert.equal(copy.upload.policyStages.length, 4);
+    for (const workflowKey of WORKFLOW_KEYS) {
+      assert.ok(copy.dashboard.workflowLabels[workflowKey]);
+    }
   }
 });
