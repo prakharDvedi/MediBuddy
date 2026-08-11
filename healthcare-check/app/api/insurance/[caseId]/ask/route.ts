@@ -1,6 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { searchPolicyChunks, computeDerivedPolicyFacts } from "@/lib/rag/policy";
 import { answerPolicyQuestion } from "@/lib/documents/policy-qa";
+import { rewritePolicyQuestion } from "@/lib/documents/policy-query";
+import {
+  normalizePolicyAnswerLanguage,
+  POLICY_UI_COPY,
+} from "@/lib/documents/policy-language";
 import type { InsurancePolicyRow } from "@/lib/audit/types";
 import { NextResponse } from "next/server";
 
@@ -24,7 +29,9 @@ export async function POST(
     return NextResponse.json({ error: "Case not found" }, { status: 404 });
   }
 
-  const { question } = await request.json();
+  const body = await request.json();
+  const question = typeof body.question === "string" ? body.question : "";
+  const answerLanguage = normalizePolicyAnswerLanguage(body.answer_language);
   if (!question || typeof question !== "string" || !question.trim()) {
     return NextResponse.json({ error: "A question is required" }, { status: 400 });
   }
@@ -47,8 +54,9 @@ export async function POST(
   }
 
   try {
+    const retrievalQuery = await rewritePolicyQuestion(question);
     const [chunks, { data: policies, error: policiesError }] = await Promise.all([
-      searchPolicyChunks(supabase, policyDocIds, question, 6),
+      searchPolicyChunks(supabase, policyDocIds, retrievalQuery, 6),
       supabase
         .from("insurance_policies")
         .select(
@@ -62,19 +70,20 @@ export async function POST(
 
     if (chunks.length === 0 && facts.length === 0) {
       return NextResponse.json({
-        answer:
-          "The uploaded policy doesn't contain anything matching this question. Please confirm this directly with your insurer.",
+        answer: POLICY_UI_COPY[answerLanguage].noMatch,
         basis: "requires_confirmation",
         citations: [],
         confidence: "low",
+        answerLanguage,
+        retrievalQuery,
         chunksUsed: 0,
       });
     }
 
     const excerpts = chunks.map((c) => ({ page: c.page, section: c.sectionTitle, content: c.content }));
-    const result = await answerPolicyQuestion(question, excerpts, facts);
+    const result = await answerPolicyQuestion(question, answerLanguage, excerpts, facts);
 
-    return NextResponse.json({ ...result, chunksUsed: chunks.length });
+    return NextResponse.json({ ...result, answerLanguage, retrievalQuery, chunksUsed: chunks.length });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Policy Q&A failed";
     return NextResponse.json({ error: message }, { status: 500 });

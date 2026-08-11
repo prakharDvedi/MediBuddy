@@ -10,9 +10,17 @@ export type CompareLineItem = {
 };
 
 export type WhyLine = {
+  kind: "sub_limit" | "deductible" | "copay";
   label: string;
   amount: number;
   reason: string;
+  context: {
+    category?: string;
+    cap?: number;
+    billed?: number;
+    deductible?: number;
+    percent?: number;
+  };
 };
 
 export type CompareResult = {
@@ -102,24 +110,30 @@ export function computeEstimateComparison(
   for (const li of lineItems) {
     if (li.subLimitCap != null && li.billed > li.subLimitCap) {
       whyLines.push({
+        kind: "sub_limit",
         label: `${li.name} — capped by "${li.subLimitCategory}" sub-limit`,
         amount: Number((li.billed - li.subLimitCap).toFixed(2)),
         reason: `Policy sub-limit for ${li.subLimitCategory} is ₹${li.subLimitCap}; the billed amount of ₹${li.billed} exceeds it, and the excess is not payable by the insurer.`,
+        context: { category: li.subLimitCategory ?? undefined, cap: li.subLimitCap, billed: li.billed },
       });
     }
   }
   if (deductibleApplied > 0) {
     whyLines.push({
+      kind: "deductible",
       label: "Deductible",
       amount: deductibleApplied,
       reason: `The policy's deductible of ₹${deductible} applies per claim and is paid out of pocket before the policy pays.`,
+      context: { deductible },
     });
   }
   if (copayAmount > 0) {
     whyLines.push({
+      kind: "copay",
       label: `Co-payment (${copayPercent}%)`,
       amount: copayAmount,
       reason: `The policy requires a ${copayPercent}% co-payment on the admissible amount after the deductible.`,
+      context: { percent: copayPercent },
     });
   }
 

@@ -2,7 +2,25 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { chunkPolicyPages, estimatePolicyTokens, splitPolicyChunk, type PolicyChunk } from "../lib/rag/policy.ts";
 import { mergePolicyExtractions } from "../lib/documents/policy-merge.ts";
+import { answerPolicyQuestion } from "../lib/documents/policy-qa.ts";
+import { normalizePolicyRetrievalQuery, rewritePolicyQuestion } from "../lib/documents/policy-query.ts";
+import { normalizePolicyAnswerLanguage } from "../lib/documents/policy-language.ts";
+import { FINDING_COPY, FINDING_TYPES } from "../lib/i18n/finding-copy.ts";
+import { normalizeLocale, SUPPORTED_LOCALES } from "../lib/i18n/types.ts";
+import { APP_COPY } from "../lib/i18n/app-copy.ts";
 import type { ExtractedPolicy } from "../lib/documents/policy.ts";
+
+const WORKFLOW_KEYS = [
+  "billAndPolicy",
+  "insurancePolicy",
+  "hospitalBill",
+  "hospitalEstimate",
+  "procedureQuote",
+  "prescription",
+  "insuranceApproval",
+  "healthcareDocument",
+  "noDocument",
+] as const;
 
 function policy(overrides: Partial<ExtractedPolicy> = {}): ExtractedPolicy {
   return {
@@ -88,4 +106,156 @@ test("policy merge deduplicates arrays and preserves waiting-period and sub-limi
   assert.equal(result.policy.subLimits.length, 3);
   assert.equal(result.provenance.sub_limits.status, "requires_confirmation");
   assert.deepEqual(result.policy.exclusions, ["Cosmetic treatment", "War-related injury"]);
+});
+
+test("policy language selection stays explicit and retrieval terms stay compact", () => {
+  assert.equal(normalizePolicyAnswerLanguage("hi"), "hi");
+  assert.equal(normalizePolicyAnswerLanguage("fr"), "en");
+
+  const original = "Meri policy mein room rent ka limit kya hai?";
+  assert.equal(
+    normalizePolicyRetrievalQuery("  room   rent limit accommodation eligibility  ", original),
+    "room rent limit accommodation eligibility",
+  );
+  assert.equal(
+    normalizePolicyRetrievalQuery("यह एक हिंदी खोज वाक्य है", original),
+    original,
+  );
+  assert.equal(
+    normalizePolicyRetrievalQuery("this is a verbose sentence that should not be used as a search query because it is too long", original),
+    original,
+  );
+});
+
+test("policy retrieval rewrite returns compact terms and preserves the original on provider failure", async () => {
+  const originalFetch = globalThis.fetch;
+  let requestBody: Record<string, unknown> | null = null;
+
+  try {
+    globalThis.fetch = async (_input, init) => {
+      requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(JSON.stringify({
+        choices: [{ message: { content: JSON.stringify({ search_terms: "room rent limit accommodation eligibility" }) } }],
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    };
+
+    const originalQuestion = "Meri policy mein room rent ka limit kya hai?";
+    assert.equal(await rewritePolicyQuestion(originalQuestion), "room rent limit accommodation eligibility");
+    assert.ok(requestBody);
+    const rewriteRequestBody = requestBody as { response_format: unknown };
+    assert.deepEqual(rewriteRequestBody.response_format, {
+      type: "json_schema",
+      json_schema: {
+        name: "policy_retrieval_query",
+        strict: true,
+        schema: {
+          type: "object",
+          properties: { search_terms: { type: "string" } },
+          required: ["search_terms"],
+          additionalProperties: false,
+        },
+      },
+    });
+
+    globalThis.fetch = async () => new Response("provider unavailable", { status: 503 });
+    assert.equal(await rewritePolicyQuestion(originalQuestion), originalQuestion);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("policy retrieval rewrite falls back when the provider exceeds its timeout", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalQuestion = "Meri policy mein room rent ka limit kya hai?";
+
+  try {
+    globalThis.fetch = async (_input, init) => new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
+    });
+
+    assert.equal(await rewritePolicyQuestion(originalQuestion, 1), originalQuestion);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("policy answer request keeps answer language separate from retrieval input", async () => {
+  const originalFetch = globalThis.fetch;
+  let requestBody: Record<string, unknown> | null = null;
+
+  try {
+    globalThis.fetch = async (_input, init) => {
+      requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(JSON.stringify({
+        choices: [{ message: { content: JSON.stringify({
+          answer: "आपकी पॉलिसी में room rent limit ₹7,500 प्रति दिन है।",
+          basis: "policy_states",
+          citations: [
+            { page: 3, section: "Section 2" },
+            { page: 99, section: "Invented section" },
+          ],
+          confidence: "high",
+        }) } }],
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    };
+
+    const result = await answerPolicyQuestion(
+      "Meri policy mein room rent ka limit kya hai?",
+      "hi",
+      [{ page: 3, section: "Section 2", content: "Room-rent limit is ₹7,500 per day." }],
+      [],
+    );
+
+    assert.ok(requestBody);
+    const answerRequestBody = requestBody as { messages: { role: string; content: string }[] };
+    const messages = answerRequestBody.messages;
+    const userMessage = messages.find((message) => message.role === "user");
+    const systemMessage = messages.find((message) => message.role === "system");
+    const userPayload = JSON.parse(userMessage?.content ?? "{}") as Record<string, unknown>;
+    assert.equal(userPayload.original_question, "Meri policy mein room rent ka limit kya hai?");
+    assert.equal(userPayload.answer_language, "hi");
+    assert.match(systemMessage?.content ?? "", /Answer in the requested answer_language/);
+    assert.deepEqual(result.citations, [{ page: 3, section: "Section 2" }]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("finding copy stays complete for every supported locale and finding type", () => {
+  for (const locale of SUPPORTED_LOCALES) {
+    const copy = FINDING_COPY[locale];
+    for (const findingType of FINDING_TYPES) {
+      assert.ok(copy.typeLabels[findingType]);
+      assert.ok(copy.questions[findingType]);
+      assert.ok(copy.explanations[findingType]);
+    }
+    assert.ok(copy.severityLabels.high);
+    assert.ok(copy.severityLabels.medium);
+    assert.ok(copy.severityLabels.low);
+    assert.ok(copy.audienceLabels.hospital);
+    assert.ok(copy.audienceLabels.insurer);
+    assert.ok(copy.questionsFor.hospital);
+    assert.ok(copy.questionsFor.insurer);
+  }
+
+  assert.equal(normalizeLocale("hi"), "hi");
+  assert.equal(normalizeLocale("mr"), "en");
+});
+
+test("app copy covers the global shell and primary user flows in every locale", () => {
+  for (const locale of SUPPORTED_LOCALES) {
+    const copy = APP_COPY[locale];
+    assert.ok(copy.shell.login);
+    assert.ok(copy.shell.language);
+    assert.ok(copy.dashboard.headline);
+    assert.ok(copy.auth.login);
+    assert.ok(copy.upload.chooseFile);
+    assert.ok(copy.caseReview.documents);
+    assert.equal(Object.keys(copy.home.intents).length, 3);
+    assert.equal(copy.upload.standardStages.length, 3);
+    assert.equal(copy.upload.policyStages.length, 4);
+    for (const workflowKey of WORKFLOW_KEYS) {
+      assert.ok(copy.dashboard.workflowLabels[workflowKey]);
+    }
+  }
 });

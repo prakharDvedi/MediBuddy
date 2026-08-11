@@ -20,7 +20,7 @@ export default async function NewCasePage({
   const intent = parseCaseIntent(rawIntent);
 
   return (
-    <AppShell context="New check">
+    <AppShell context="newCheck">
       <main className="page-shell-narrow">
         <BackLink />
         <NewCaseShell intent={intent} />

@@ -21,6 +21,36 @@ It gives patients evidence and context to ask better questions about what they a
 - Summarize room-rent limits, co-pay, deductibles, waiting periods, exclusions, and sub-limits.
 - Ask questions about the policy and receive page-level citations.
 
+#### Multilingual policy questions
+
+Policy Q&A supports English and Hindi answers, including Hindi and Hinglish questions. The user
+selects the answer language explicitly. MedBud keeps the original question separate from a compact
+English retrieval query, retrieves the original English policy text, and answers in the selected
+language without changing policy values or citations.
+
+```text
+Hindi / Hinglish question
+  ↓
+compact English retrieval terms
+  ↓
+English policy clause + deterministic facts
+  ↓
+Hindi or English explanation with the same page citation
+```
+
+Example: `Meri policy mein room rent ka limit kya hai?` can return a Hindi explanation grounded in
+the English policy clause, with the original section and page shown as the source.
+
+![Hindi policy Q&A showing grounded answer and citation](docs/multilingual-policy-qa.png)
+
+#### App-wide language support
+
+The English/Hindi selector is available across the app shell, home page, dashboard, authentication,
+new-check flow, upload and processing states, document details, summaries, findings, checklists, and
+policy comparisons. The selected locale persists across refreshes. UI copy is localized from a shared
+catalog so additional Indian languages can be added without changing canonical medicine/procedure
+identities, source quotes, citations, policy text, or deterministic calculations.
+
 ### Compare a bill with a policy
 
 When both documents are available, MedBud estimates:
