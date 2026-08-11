@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ErrorState, SourceBadge, StatusBadge } from "@/components/ui";
+import { useLocale } from "@/components/locale-provider";
 import {
   POLICY_UI_COPY,
   type PolicyAnswer,
@@ -12,17 +13,12 @@ type Answer = PolicyAnswer & {
   answerLanguage: PolicyAnswerLanguage;
 };
 
-const LANGUAGE_OPTIONS: { value: PolicyAnswerLanguage; label: string }[] = [
-  { value: "en", label: "English" },
-  { value: "hi", label: "हिंदी" },
-];
-
 export function AskPolicy({ caseId }: { caseId: string }) {
   const [question, setQuestion] = useState("");
-  const [answerLanguage, setAnswerLanguage] = useState<PolicyAnswerLanguage>("en");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [answer, setAnswer] = useState<Answer | null>(null);
+  const { locale: answerLanguage } = useLocale();
   const copy = POLICY_UI_COPY[answerLanguage];
   const answerCopy = answer ? POLICY_UI_COPY[answer.answerLanguage] : copy;
 
@@ -61,25 +57,7 @@ export function AskPolicy({ caseId }: { caseId: string }) {
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-info">{copy.eyebrow}</p>
           <h3 className="mt-1 text-xl font-semibold tracking-tight text-text-primary">{copy.title}</h3>
         </div>
-        <div className="flex flex-col items-start gap-2 sm:items-end">
-          <div className="flex items-center gap-2" role="group" aria-label={copy.languageLabel}>
-            <span className="text-xs font-medium text-text-muted">{copy.languageLabel}</span>
-            <div className="flex rounded-full border border-info/20 bg-surface p-0.5">
-              {LANGUAGE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={answerLanguage === option.value}
-                  onClick={() => setAnswerLanguage(option.value)}
-                  className={`focus-ring rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${answerLanguage === option.value ? "bg-info text-white" : "text-info hover:bg-info-bg"}`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <SourceBadge>{copy.grounded}</SourceBadge>
-        </div>
+        <SourceBadge>{copy.grounded}</SourceBadge>
       </div>
 
       <div className="mt-5">

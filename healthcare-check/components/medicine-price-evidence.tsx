@@ -18,6 +18,17 @@ type MedicinePriceSource = {
   unit_reason?: string | null;
 };
 
+type MedicineEvidenceLabels = {
+  hospitalCharge: string;
+  effective: string;
+  retrieved: string;
+  viewSource: string;
+  unitCouldNotBeVerified: string;
+  potentialSavings: string;
+  potentialPriceDifference: string;
+  estimateDisclaimer: string;
+};
+
 function money(value: number, currency = "INR") {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency, maximumFractionDigits: 2 }).format(value);
 }
@@ -28,7 +39,7 @@ function dateLabel(value: string | null | undefined) {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function PriceSource({ source }: { source: MedicinePriceSource }) {
+function PriceSource({ source, labels }: { source: MedicinePriceSource; labels: MedicineEvidenceLabels }) {
   if (typeof source.amount !== "number") return null;
   const isNppa = source.source_kind === "nppa";
   const context = isNppa ? `${source.sale_unit ?? "unit"}${source.tax_status === "excluded" ? ", excluding tax" : ""}` : `${source.pack_text ?? "pack"}${source.tax_status === "unknown" ? " · listed MRP" : ""}`;
@@ -40,15 +51,15 @@ function PriceSource({ source }: { source: MedicinePriceSource }) {
         <div><SourceBadge>{source.label ?? (isNppa ? "NPPA ceiling price" : "Jan Aushadhi listed MRP")}</SourceBadge><p className="mt-2 text-sm text-text-muted">{context}</p></div>
         <p className="text-lg font-semibold tabular-nums text-text-primary">{money(source.amount, source.currency)}</p>
       </div>
-      {effective && <p className="mt-2 text-xs text-text-muted">{isNppa ? "Effective" : "Retrieved"}: {effective}</p>}
+      {effective && <p className="mt-2 text-xs text-text-muted">{isNppa ? labels.effective : labels.retrieved}: {effective}</p>}
       {source.source && <p className="mt-1 text-xs text-text-muted">{source.source}</p>}
-      {source.source_url && <a className="focus-ring mt-2 inline-flex rounded text-xs font-medium text-info underline underline-offset-4" href={source.source_url} target="_blank" rel="noreferrer">View source</a>}
-      {source.unit_compatible === false && <div className="mt-3"><StatusBadge tone="warning">Unit could not be verified</StatusBadge></div>}
+      {source.source_url && <a className="focus-ring mt-2 inline-flex rounded text-xs font-medium text-info underline underline-offset-4" href={source.source_url} target="_blank" rel="noreferrer">{labels.viewSource}</a>}
+      {source.unit_compatible === false && <div className="mt-3"><StatusBadge tone="warning">{labels.unitCouldNotBeVerified}</StatusBadge></div>}
     </div>
   );
 }
 
-export function MedicinePriceEvidence({ evidence }: { evidence: Record<string, unknown> }) {
+export function MedicinePriceEvidence({ evidence, labels }: { evidence: Record<string, unknown>; labels: MedicineEvidenceLabels }) {
   const sources = Array.isArray(evidence.price_observations) ? evidence.price_observations as MedicinePriceSource[] : [];
   const matchReason = typeof evidence.match_reason === "string" ? evidence.match_reason : null;
   const identity = typeof evidence.medicine_identity === "string" ? evidence.medicine_identity : null;
@@ -64,11 +75,11 @@ export function MedicinePriceEvidence({ evidence }: { evidence: Record<string, u
           {identity && <p className="text-base font-semibold text-text-primary">{identity}</p>}
           {matchReason && <p className="mt-1 text-xs leading-5 text-text-muted">{matchReason}</p>}
         </div>
-        {hospitalPrice != null && <div className="text-left sm:text-right"><p className="text-xs text-text-muted">Hospital charge</p><p className="mt-1 text-xl font-semibold tabular-nums text-text-primary">{money(hospitalPrice)}{hospitalUnit ? ` / ${hospitalUnit}` : ""}</p></div>}
+        {hospitalPrice != null && <div className="text-left sm:text-right"><p className="text-xs text-text-muted">{labels.hospitalCharge}</p><p className="mt-1 text-xl font-semibold tabular-nums text-text-primary">{money(hospitalPrice)}{hospitalUnit ? ` / ${hospitalUnit}` : ""}</p></div>}
       </div>
-      {sources.length > 0 && <div className="grid gap-2 sm:grid-cols-2">{sources.map((source, index) => <PriceSource key={`${source.source_kind ?? "source"}-${index}`} source={source} />)}</div>}
-      {potentialDifference != null && <div className="rounded-xl border border-warning/25 bg-warning-bg px-4 py-3"><p className="text-xs font-semibold uppercase tracking-[0.1em] text-warning">{potentialSavings != null ? "Potential savings to investigate" : "Potential price difference"}</p><p className="mt-1 text-2xl font-semibold tabular-nums text-warning">{money(potentialDifference)}</p></div>}
-      {potentialDifference != null && <p className="text-xs leading-5 text-text-muted">Estimated from the available reference price. This does not guarantee that this amount is recoverable or that the hospital charge is unlawful.</p>}
+      {sources.length > 0 && <div className="grid gap-2 sm:grid-cols-2">{sources.map((source, index) => <PriceSource key={`${source.source_kind ?? "source"}-${index}`} source={source} labels={labels} />)}</div>}
+      {potentialDifference != null && <div className="rounded-xl border border-warning/25 bg-warning-bg px-4 py-3"><p className="text-xs font-semibold uppercase tracking-[0.1em] text-warning">{potentialSavings != null ? labels.potentialSavings : labels.potentialPriceDifference}</p><p className="mt-1 text-2xl font-semibold tabular-nums text-warning">{money(potentialDifference)}</p></div>}
+      {potentialDifference != null && <p className="text-xs leading-5 text-text-muted">{labels.estimateDisclaimer}</p>}
     </div>
   );
 }

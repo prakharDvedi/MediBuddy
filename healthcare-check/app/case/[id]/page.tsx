@@ -8,10 +8,14 @@ import { ReviewWorkspaceHeader } from "@/components/run-audit-button";
 import { EditableCaseTitle } from "@/components/editable-case-title";
 import { AskPolicy } from "@/components/ask-policy";
 import { CompareEstimate, type OtherPolicyTerm } from "@/components/compare-estimate";
+import { LocaleProvider } from "@/components/locale-provider";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { QuestionsChecklist, type ChecklistItem } from "@/components/questions-checklist";
 import { AppShell, BackLink } from "@/components/app-shell";
 import { EmptyState, SectionHeader, StatusBadge } from "@/components/ui";
 import { calculatePotentialSavings } from "@/lib/audit/summary";
+import { LOCALE_COOKIE_NAME, normalizeLocale } from "@/lib/i18n/types";
+import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 
 type InsurancePolicySummary = {
@@ -33,6 +37,8 @@ const CONFIDENCE_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
 export default async function CasePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const cookieStore = await cookies();
+  const initialLocale = normalizeLocale(cookieStore.get(LOCALE_COOKIE_NAME)?.value);
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) redirect("/login");
@@ -74,6 +80,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
       question: question.question_text,
       context: finding?.title ?? "General review",
       audience,
+      findingType: finding?.finding_type,
     });
   }
   const questionChecklist = Array.from(questionMap.values());
@@ -82,14 +89,13 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   const comparisonPolicy = policies[0];
   if (comparisonPolicy?.room_rent_limit != null) {
     otherPolicyTerms.push({
-      label: "Room-rent restriction",
-      description: `The policy limits room rent to ₹${comparisonPolicy.room_rent_limit.toLocaleString("en-IN")} per day. The comparison estimate shows this term separately and does not apply a proportional room-choice deduction.`,
+      kind: "room_rent_restriction",
+      amount: comparisonPolicy.room_rent_limit,
     });
   }
   if (comparisonPolicy?.consumables_covered === false) {
     otherPolicyTerms.push({
-      label: "Consumables exclusion",
-      description: "Consumables are not covered under this policy. The comparison estimate shows this term separately and does not subtract the exclusion from the numeric result.",
+      kind: "consumables_exclusion",
     });
   }
 
@@ -97,11 +103,12 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
 
   return (
     <AppShell context="Case review">
+      <LocaleProvider initialLocale={initialLocale}>
       <main className="page-shell">
         <BackLink />
         <section className="mt-7 flex flex-col gap-4 border-b border-border pb-7 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-info">Case review</p><EditableCaseTitle caseId={id} title={caseRow.title} /><p className="mt-2 text-sm text-text-muted">Your documents, findings, evidence, and next questions in one place.</p></div>
-          <StatusBadge tone={statusTone}>{caseRow.status === "ready" ? "Ready to review" : caseRow.status === "error" ? "Needs attention" : "In progress"}</StatusBadge>
+          <div className="flex w-full flex-col items-end gap-2 sm:w-auto"><LocaleSwitcher /><StatusBadge tone={statusTone}>{caseRow.status === "ready" ? "Ready to review" : caseRow.status === "error" ? "Needs attention" : "In progress"}</StatusBadge></div>
         </section>
 
         <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_19rem]">
@@ -134,6 +141,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
           </aside>
         </div>
       </main>
+      </LocaleProvider>
     </AppShell>
   );
 }

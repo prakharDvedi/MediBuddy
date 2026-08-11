@@ -5,6 +5,8 @@ import { mergePolicyExtractions } from "../lib/documents/policy-merge.ts";
 import { answerPolicyQuestion } from "../lib/documents/policy-qa.ts";
 import { normalizePolicyRetrievalQuery, rewritePolicyQuestion } from "../lib/documents/policy-query.ts";
 import { normalizePolicyAnswerLanguage } from "../lib/documents/policy-language.ts";
+import { FINDING_COPY, FINDING_TYPES } from "../lib/i18n/finding-copy.ts";
+import { normalizeLocale, SUPPORTED_LOCALES } from "../lib/i18n/types.ts";
 import type { ExtractedPolicy } from "../lib/documents/policy.ts";
 
 function policy(overrides: Partial<ExtractedPolicy> = {}): ExtractedPolicy {
@@ -189,4 +191,25 @@ test("policy answer request keeps answer language separate from retrieval input"
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("finding copy stays complete for every supported locale and finding type", () => {
+  for (const locale of SUPPORTED_LOCALES) {
+    const copy = FINDING_COPY[locale];
+    for (const findingType of FINDING_TYPES) {
+      assert.ok(copy.typeLabels[findingType]);
+      assert.ok(copy.questions[findingType]);
+      assert.ok(copy.explanations[findingType]);
+    }
+    assert.ok(copy.severityLabels.high);
+    assert.ok(copy.severityLabels.medium);
+    assert.ok(copy.severityLabels.low);
+    assert.ok(copy.audienceLabels.hospital);
+    assert.ok(copy.audienceLabels.insurer);
+    assert.ok(copy.questionsFor.hospital);
+    assert.ok(copy.questionsFor.insurer);
+  }
+
+  assert.equal(normalizeLocale("hi"), "hi");
+  assert.equal(normalizeLocale("mr"), "en");
 });
