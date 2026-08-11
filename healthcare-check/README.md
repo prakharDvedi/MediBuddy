@@ -37,6 +37,28 @@ MedBud can:
 - retrieve relevant policy sections for user questions
 - answer with page and section citations
 
+#### Multilingual policy questions
+
+Policy Q&A supports English and Hindi answers, including Hindi and Hinglish questions. The user
+selects the answer language explicitly. MedBud keeps the original question separate from a compact
+English retrieval query, retrieves the original English policy text, and answers in the selected
+language without changing policy values or citations.
+
+```text
+Hindi / Hinglish question
+  ↓
+compact English retrieval terms
+  ↓
+English policy clause + deterministic facts
+  ↓
+Hindi or English explanation with the same page citation
+```
+
+Example: `Meri policy mein room rent ka limit kya hai?` can return a Hindi explanation grounded in
+the English policy clause, with the original section and page shown as the source.
+
+![Hindi policy Q&A showing grounded answer and citation](../docs/multilingual-policy-qa.png)
+
 ### Compare a bill with a policy
 
 Users can upload both a hospital estimate and an insurance policy.
@@ -280,8 +302,15 @@ Insurance policy questions use retrieval before generation.
 
 The current retrieval system uses PostgreSQL full-text search.
 
+For multilingual policy questions, the original Hindi, Hinglish, or English question is rewritten
+into compact English search terms before full-text retrieval. The retrieved chunks remain the
+original English policy text. The answer language is selected independently, so translation never
+enters structured extraction, matching, deterministic calculations, or evidence lineage.
+
 ```text
-User question
+Original question
+  ↓
+compact English retrieval terms
   ↓
 search policy chunks
   ↓
