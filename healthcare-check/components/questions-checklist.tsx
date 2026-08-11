@@ -66,7 +66,7 @@ export function QuestionsChecklist({ items }: { items: ChecklistItem[] }) {
         <StatusBadge tone="info">{items.length}</StatusBadge>
       </div>
 
-      <div className="mt-5">
+      <div className="scrollbar-hidden mt-5 max-h-[32rem] overflow-y-auto">
         <ChecklistGroup audience="hospital" items={hospitalQuestions} copy={copy} />
         <ChecklistGroup audience="insurer" items={insurerQuestions} copy={copy} />
       </div>

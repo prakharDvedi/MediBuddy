@@ -37,6 +37,19 @@ export type PolicyUiCopy = {
   suggestedQuestions: string[];
   noMatch: string;
   error: string;
+  voice: {
+    start: string;
+    stop: string;
+    listening: string;
+    review: string;
+    privacy: string;
+    unsupported: string;
+    permission: string;
+    noSpeech: string;
+    service: string;
+    language: string;
+    generic: string;
+  };
   coverage: {
     eyebrow: string;
     title: string;
@@ -111,6 +124,19 @@ export const POLICY_UI_COPY: Record<PolicyAnswerLanguage, PolicyUiCopy> = {
     noMatch:
       "The uploaded policy doesn't contain anything matching this question. Please confirm this directly with your insurer.",
     error: "Could not answer that question",
+    voice: {
+      start: "Use voice",
+      stop: "Stop listening",
+      listening: "Listening...",
+      review: "Review the transcript before asking",
+      privacy: "Voice recognition may send audio to your browser vendor's service. No audio is stored by MedBud.",
+      unsupported: "Voice input is not available in this browser. You can still type your question.",
+      permission: "Microphone access was not available. You can still type your question.",
+      noSpeech: "No speech was recognized. You can try again or type your question.",
+      service: "Voice recognition could not connect. You can try again or type your question.",
+      language: "This voice language is not supported here. You can still type your question.",
+      generic: "Voice input could not start. You can still type your question.",
+    },
     coverage: {
       eyebrow: "Policy facts",
       title: "Coverage summary",
@@ -196,6 +222,19 @@ export const POLICY_UI_COPY: Record<PolicyAnswerLanguage, PolicyUiCopy> = {
     noMatch:
       "आपकी अपलोड की गई पॉलिसी में इस सवाल से जुड़ी जानकारी नहीं मिली। कृपया बीमाकर्ता से सीधे पुष्टि करें।",
     error: "इस सवाल का जवाब नहीं मिल सका",
+    voice: {
+      start: "आवाज़ से पूछें",
+      stop: "सुनना बंद करें",
+      listening: "सुना जा रहा है...",
+      review: "सवाल पूछने से पहले ट्रांसक्रिप्ट जाँच लें",
+      privacy: "आवाज़ पहचानने के लिए ऑडियो ब्राउज़र की सेवा को भेजा जा सकता है। MedBud ऑडियो सेव नहीं करता।",
+      unsupported: "इस ब्राउज़र में आवाज़ से सवाल उपलब्ध नहीं है। आप सवाल टाइप कर सकते हैं।",
+      permission: "माइक्रोफ़ोन उपलब्ध नहीं है। आप सवाल टाइप कर सकते हैं।",
+      noSpeech: "कोई आवाज़ पहचानी नहीं गई। फिर कोशिश करें या सवाल टाइप करें।",
+      service: "आवाज़ पहचान सेवा से कनेक्ट नहीं हो सका। फिर कोशिश करें या सवाल टाइप करें।",
+      language: "यह आवाज़ की भाषा यहाँ उपलब्ध नहीं है। आप सवाल टाइप कर सकते हैं।",
+      generic: "आवाज़ से सवाल शुरू नहीं हो सका। आप सवाल टाइप कर सकते हैं।",
+    },
     coverage: {
       eyebrow: "पॉलिसी की जानकारी",
       title: "कवरेज का सारांश",
