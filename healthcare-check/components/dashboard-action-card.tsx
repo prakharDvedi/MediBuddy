@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   CASE_INTENT_CONFIG,
@@ -5,9 +7,14 @@ import {
   type CaseIntent,
 } from "@/lib/cases/intents";
 import { TONE_CLASSES } from "@/lib/presentation";
+import { useLocale } from "@/components/locale-provider";
+import { APP_COPY } from "@/lib/i18n/app-copy";
 
 export function DashboardActionCard({ intent }: { intent: CaseIntent }) {
   const config = CASE_INTENT_CONFIG[intent];
+  const { locale } = useLocale();
+  const copy = APP_COPY[locale].dashboard;
+  const intentCopy = APP_COPY[locale].home.intents[intent];
 
   return (
     <Link
@@ -16,13 +23,13 @@ export function DashboardActionCard({ intent }: { intent: CaseIntent }) {
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">{config.eyebrow}</p>
-          <h2 className="mt-2 text-lg font-semibold leading-snug text-text-primary">{config.title}</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">{intentCopy.eyebrow}</p>
+          <h2 className="mt-2 text-lg font-semibold leading-snug text-text-primary">{intentCopy.title}</h2>
         </div>
         <span className="text-xl text-text-muted transition-transform group-hover:translate-x-1">→</span>
       </div>
-      <p className="mt-4 text-sm leading-6 text-text-muted">{config.cardDescription}</p>
-      <span className="mt-auto pt-6 text-sm font-medium text-primary">Start here</span>
+      <p className="mt-4 text-sm leading-6 text-text-muted">{intentCopy.cardDescription}</p>
+      <span className="mt-auto pt-6 text-sm font-medium text-primary">{copy.startHere}</span>
     </Link>
   );
 }

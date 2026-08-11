@@ -17,6 +17,7 @@ export function LocaleProvider({ children, initialLocale = "en" }: { children: R
     setLocaleState(normalizedLocale);
     if (typeof document !== "undefined") {
       document.cookie = `${LOCALE_COOKIE_NAME}=${normalizedLocale}; Path=/; Max-Age=${LOCALE_COOKIE_MAX_AGE}; SameSite=Lax`;
+      document.documentElement.lang = normalizedLocale;
     }
   }, []);
   const value = useMemo(() => ({ locale, setLocale }), [locale, setLocale]);

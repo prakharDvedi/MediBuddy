@@ -28,11 +28,15 @@ export type RecentCase = {
   id: string;
   title: string;
   workflowLabel: string;
+  workflowKey: string;
   updatedAt: string;
   statusLabel: string;
+  statusKey: "attention" | "processing" | "findings" | "ready";
+  statusCount: number;
   statusTone: Tone;
   potentialSavings: number;
   actionLabel: "Continue" | "View";
+  actionKey: "continue" | "view";
 };
 
 export async function getRecentCases(
@@ -86,6 +90,7 @@ export async function getRecentCases(
       title: caseRow.title,
       workflowLabel: getWorkflowLabel(caseDocuments),
       updatedAt: latestDocument?.created_at ?? caseRow.created_at,
+      workflowKey: getWorkflowLabel(caseDocuments),
       statusLabel: hasErrorDocument
         ? "Needs attention"
         : hasProcessingDocument
@@ -93,9 +98,12 @@ export async function getRecentCases(
           : findingsCount > 0
             ? `${findingsCount} thing${findingsCount === 1 ? "" : "s"} worth checking`
             : "Ready to review",
+      statusKey: hasErrorDocument ? "attention" : hasProcessingDocument ? "processing" : findingsCount > 0 ? "findings" : "ready",
+      statusCount: findingsCount,
       statusTone: hasErrorDocument ? "danger" : hasProcessingDocument ? "info" : findingsCount > 0 ? "warning" : "success",
       potentialSavings: Number(potentialSavings.toFixed(2)),
       actionLabel: hasProcessingDocument ? "Continue" : "View",
+      actionKey: hasProcessingDocument ? "continue" : "view",
     };
   });
 }

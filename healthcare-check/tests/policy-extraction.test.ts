@@ -7,6 +7,7 @@ import { normalizePolicyRetrievalQuery, rewritePolicyQuestion } from "../lib/doc
 import { normalizePolicyAnswerLanguage } from "../lib/documents/policy-language.ts";
 import { FINDING_COPY, FINDING_TYPES } from "../lib/i18n/finding-copy.ts";
 import { normalizeLocale, SUPPORTED_LOCALES } from "../lib/i18n/types.ts";
+import { APP_COPY } from "../lib/i18n/app-copy.ts";
 import type { ExtractedPolicy } from "../lib/documents/policy.ts";
 
 function policy(overrides: Partial<ExtractedPolicy> = {}): ExtractedPolicy {
@@ -212,4 +213,19 @@ test("finding copy stays complete for every supported locale and finding type", 
 
   assert.equal(normalizeLocale("hi"), "hi");
   assert.equal(normalizeLocale("mr"), "en");
+});
+
+test("app copy covers the global shell and primary user flows in every locale", () => {
+  for (const locale of SUPPORTED_LOCALES) {
+    const copy = APP_COPY[locale];
+    assert.ok(copy.shell.login);
+    assert.ok(copy.shell.language);
+    assert.ok(copy.dashboard.headline);
+    assert.ok(copy.auth.login);
+    assert.ok(copy.upload.chooseFile);
+    assert.ok(copy.caseReview.documents);
+    assert.equal(Object.keys(copy.home.intents).length, 3);
+    assert.equal(copy.upload.standardStages.length, 3);
+    assert.equal(copy.upload.policyStages.length, 4);
+  }
 });

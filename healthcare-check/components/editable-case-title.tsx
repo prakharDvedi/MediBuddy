@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { useLocale } from "@/components/locale-provider";
+import { APP_COPY } from "@/lib/i18n/app-copy";
 
 export function EditableCaseTitle({ caseId, title }: { caseId: string; title: string }) {
   const [editing, setEditing] = useState(false);
@@ -10,6 +12,8 @@ export function EditableCaseTitle({ caseId, title }: { caseId: string; title: st
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const { locale } = useLocale();
+  const copy = APP_COPY[locale].shell;
 
   function startEditing() {
     setValue(title);
@@ -36,7 +40,7 @@ export function EditableCaseTitle({ caseId, title }: { caseId: string; title: st
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Could not save title");
+      setError(data.error ?? copy.saveTitleError);
       return;
     }
 
@@ -73,7 +77,7 @@ export function EditableCaseTitle({ caseId, title }: { caseId: string; title: st
     <button
       onClick={startEditing}
       className="focus-ring mt-2 block rounded-lg text-left text-2xl font-semibold tracking-tight text-text-primary hover:underline decoration-border-strong"
-      title="Click to rename"
+      title={copy.renameCase}
     >
       {title}
     </button>

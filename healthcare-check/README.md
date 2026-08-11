@@ -59,6 +59,14 @@ the English policy clause, with the original section and page shown as the sourc
 
 ![Hindi policy Q&A showing grounded answer and citation](../docs/multilingual-policy-qa.png)
 
+#### App-wide language support
+
+The English/Hindi selector is available across the app shell, home page, dashboard, authentication,
+new-check flow, upload and processing states, document details, summaries, findings, checklists, and
+policy comparisons. The selected locale persists across refreshes. UI copy is localized from a shared
+catalog so additional Indian languages can be added without changing canonical medicine/procedure
+identities, source quotes, citations, policy text, or deterministic calculations.
+
 ### Compare a bill with a policy
 
 Users can upload both a hospital estimate and an insurance policy.
